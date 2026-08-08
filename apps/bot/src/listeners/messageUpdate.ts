@@ -14,6 +14,10 @@ export class MessageUpdateListener extends Listener {
 	public async run(oldMsg: Message | PartialMessage, newMsg: Message) {
 		const guild = newMsg.guild ?? oldMsg?.guild;
 		if (!guild) return;
+
+		//* this one line is important, it ignores our own messages as we consider them noise
+		if (newMsg.author?.id === newMsg.client.user.id) return;
+
 		if (await isLoggingChannel(guild, newMsg.channel?.id ?? oldMsg?.channel?.id)) return;
 
 		const oldContent = oldMsg?.content ?? '';
