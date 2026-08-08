@@ -16,7 +16,8 @@ import {
 	PermissionFlagsBits,
 	RoleSelectMenuBuilder,
 } from 'discord.js';
-import { getSettings, updateSettings } from '#lib/settings.js';
+import { logSettingsChange } from '#lib/logging.js';
+import { getSettings, type ServerSettings, updateSettings } from '#lib/settings.js';
 import { awaitMessageComponentSafe } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -148,6 +149,13 @@ export class SetupCommand extends Command {
 		let settings = await getSettings(guildId);
 		const summary: string[] = [];
 
+		const applySettings = async (patch: Partial<ServerSettings>) => { // migration from just "settings = " as we now also log changes
+			const before = settings;
+			settings = await updateSettings(guildId, guild.name, patch);
+
+			await logSettingsChange(guild, interaction.user, before, settings);
+		};
+
 		// 1. welcome messages
 		await startChoice.update({
 			embeds: [
@@ -223,7 +231,7 @@ export class SetupCommand extends Command {
 			}
 
 			if (welcomeChannelId) {
-				settings = await updateSettings(guildId, guild.name, {
+				await applySettings({
 					welcomePeople: true,
 					welcomeChannelId,
 				});
@@ -333,7 +341,7 @@ export class SetupCommand extends Command {
 			}
 
 			if (ticketCategoryId) {
-				settings = await updateSettings(guildId, guild.name, {
+				await applySettings({
 					ticketCategoryId,
 					staffRole: staffRoleId,
 					ticketTranscriptChannelId: transcriptChannelId,
@@ -518,7 +526,7 @@ export class SetupCommand extends Command {
 			}
 
 			if (loggingChannelId) {
-				settings = await updateSettings(guildId, guild.name, {
+				await applySettings({
 					loggingEnabled: true,
 					loggingChannelId,
 				});
@@ -605,7 +613,7 @@ export class SetupCommand extends Command {
 			}
 
 			if (confessionChannelId) {
-				settings = await updateSettings(guildId, guild.name, {
+				await applySettings({
 					confessionEnabled: true,
 					confessionChannelId,
 				});
@@ -634,7 +642,5 @@ export class SetupCommand extends Command {
 			],
 			components: [],
 		});
-
-		void settings;
 	}
 }
