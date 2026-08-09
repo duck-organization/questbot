@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { Listener } from '@sapphire/framework';
-import { Events, type Message } from 'discord.js';
+import { Events, type Message, PermissionFlagsBits } from 'discord.js';
 import { containsBlockedWord } from '#lib/automod.js';
 import { autoPublish } from '#lib/autoPublisher.js';
 import { isHaiku } from '#lib/haiku.js';
@@ -34,7 +34,11 @@ export class MessageCreateListener extends Listener<typeof Events.MessageCreate>
 			await message.reply("That's a haiku!").catch((err) => console.error(err));
 		}
 
-		const isBlocked = await containsBlockedWord(message.guild.id, message.content);
+		// administrator perm and people that can modify automod are exempt from automod
+		const permissions = message.member?.permissions;
+		const isExempt =
+			permissions?.has(PermissionFlagsBits.Administrator) || permissions?.has(PermissionFlagsBits.ManageGuild) || false;
+		const isBlocked = !isExempt && (await containsBlockedWord(message.guild.id, message.content));
 
 		if (isBlocked && !message.author.bot) {
 			await message.delete().catch((err) => console.error(err));
