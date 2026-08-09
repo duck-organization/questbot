@@ -18,6 +18,9 @@ export class MessageUpdateListener extends Listener {
 		//* this one line is important, it ignores our own messages as we consider them noise
 		if (newMsg.author?.id === newMsg.client.user.id) return;
 
+		// discord also sends out updates for embeds (and pins) so this will filter out those
+		if (!newMsg.editedTimestamp) return;
+
 		if (await isLoggingChannel(guild, newMsg.channel?.id ?? oldMsg?.channel?.id)) return;
 
 		const oldContent = oldMsg?.content ?? '';
