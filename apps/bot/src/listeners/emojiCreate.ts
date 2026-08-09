@@ -25,11 +25,7 @@ export class EmojiCreateListener extends Listener<typeof Events.GuildEmojiCreate
 			.setTimestamp();
 
 		if (auditEntry?.executor) {
-			embed.addFields({
-				name: 'Moderator',
-				value: auditEntry.executor.tag ?? auditEntry.executor.username ?? auditEntry.executor.id,
-				inline: true,
-			});
+			embed.addFields({ name: 'Moderator', value: `<@${auditEntry.executor.id}>`, inline: true });
 		}
 
 		await logEmbed(emoji.guild, embed);

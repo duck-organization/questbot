@@ -30,7 +30,7 @@ export class MessageDeleteListener extends Listener<typeof Events.MessageDelete>
 			.setColor(0xff6962)
 			.addFields(
 				{ name: 'Channel', value: message.channel?.toString() ?? 'Unknown', inline: true },
-				{ name: 'Author', value: message.author?.tag ?? 'Unknown', inline: true },
+				{ name: 'Author', value: message.author ? `<@${message.author.id}>` : 'Unknown', inline: true },
 				{ name: 'Content', value: contentValue },
 			)
 			.setFooter({ text: `ID: ${message.id}` })

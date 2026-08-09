@@ -27,7 +27,7 @@ export class GuildBanAddListener extends Listener<typeof Events.GuildBanAdd> {
 			.setTimestamp();
 
 		if (auditEntry?.executor) {
-			embed.addFields({ name: 'Moderator', value: `${auditEntry.executor.tag}`, inline: true });
+			embed.addFields({ name: 'Moderator', value: `<@${auditEntry.executor.id}>`, inline: true });
 		}
 
 		if (auditEntry?.reason) {

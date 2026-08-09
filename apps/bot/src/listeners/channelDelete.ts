@@ -46,8 +46,7 @@ export class ChannelDeleteListener extends Listener<typeof Events.ChannelDelete>
 		const auditEntry = await getRecentAuditLogEntry(channel.guild, AuditLogEvent.ChannelDelete, channel.id);
 
 		if (auditEntry?.executor) {
-			const moderatorLabel = String(auditEntry.executor.tag ?? auditEntry.executor.username ?? auditEntry.executor.id);
-			embed.addFields({ name: 'Moderator', value: moderatorLabel, inline: true });
+			embed.addFields({ name: 'Moderator', value: `<@${auditEntry.executor.id}>`, inline: true });
 		}
 
 		await logEmbed(channel.guild, embed);

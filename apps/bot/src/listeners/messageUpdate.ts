@@ -40,13 +40,14 @@ export class MessageUpdateListener extends Listener {
 
 		const beforeValue = truncate(beforeParts.join('\n'), 1024) || '-';
 		const afterValue = truncate(afterParts.join('\n'), 1024) || '-';
+		const authorId = newMsg.author?.id ?? oldMsg?.author?.id;
 
 		const embed = new EmbedBuilder()
 			.setTitle('Message Edited')
 			.setColor(0xfac898)
 			.addFields(
 				{ name: 'Message', value: newMsg.url ?? 'Unknown', inline: true },
-				{ name: 'Author', value: newMsg.author?.tag ?? oldMsg?.author?.tag ?? 'Unknown', inline: true },
+				{ name: 'Author', value: authorId ? `<@${authorId}>` : 'Unknown', inline: true },
 				{ name: 'Before', value: beforeValue },
 				{ name: 'After', value: afterValue },
 			)

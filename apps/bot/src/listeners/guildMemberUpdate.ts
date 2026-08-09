@@ -26,14 +26,11 @@ export class GuildMemberUpdateListener extends Listener<typeof Events.GuildMembe
 		const embed = new EmbedBuilder()
 			.setTitle(timeoutAdded ? 'Member Timed Out' : 'Timeout Removed')
 			.setColor(timeoutAdded ? 0xfac898 : 0x77dd76)
-			.addFields(
-				{ name: 'Member', value: `${newMember.user.tag} (${newMember.id})`, inline: false },
-				{ name: 'Username', value: newMember.user.toString(), inline: true },
-			)
+			.addFields({ name: 'Member', value: `<@${newMember.id}>`, inline: true })
 			.setTimestamp();
 
 		if (auditEntry?.executor) {
-			embed.addFields({ name: 'Moderator', value: `${auditEntry.executor.tag}`, inline: true });
+			embed.addFields({ name: 'Moderator', value: `<@${auditEntry.executor.id}>`, inline: true });
 		}
 
 		if (auditEntry?.reason) {
