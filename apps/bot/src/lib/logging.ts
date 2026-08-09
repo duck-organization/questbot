@@ -15,6 +15,13 @@ function formatSetting(key: keyof ServerSettings, value: ServerSettings[keyof Se
 	return String(value);
 }
 
+async function sendLog(guild: Guild, channelId: string, embed: EmbedBuilder) {
+	const channel = await guild.channels.fetch(channelId).catch(() => null);
+	if (!channel?.isTextBased() || !channel.isSendable()) return;
+
+	await channel.send({ embeds: [embed] }).catch((err) => console.error(err));
+}
+
 export async function logEmbed(guild: Guild, embed: EmbedBuilder) {
 	const settings = await getSettings(guild.id).catch((err) => {
 		console.error(err);
@@ -23,14 +30,13 @@ export async function logEmbed(guild: Guild, embed: EmbedBuilder) {
 
 	if (!settings?.loggingEnabled || !settings.loggingChannelId) return;
 
-	const channel = await guild.channels.fetch(settings.loggingChannelId).catch(() => null);
-	if (!channel?.isTextBased() || !channel.isSendable()) return;
-
-	await channel.send({ embeds: [embed] }).catch((err) => console.error(err));
+	await sendLog(guild, settings.loggingChannelId, embed);
 }
 
 // used in settings.ts for all changes
 export async function logSettingsChange(guild: Guild, user: User, before: ServerSettings, after: ServerSettings) {
+	const finalChannelId = before.loggingEnabled && !after.loggingEnabled ? before.loggingChannelId : null; // aka it was just disabled
+
 	for (const key of Object.keys(SETTING_LABELS) as (keyof ServerSettings)[]) {
 		if (before[key] === after[key]) continue;
 
@@ -51,7 +57,8 @@ export async function logSettingsChange(guild: Guild, user: User, before: Server
 			)
 			.setTimestamp();
 
-		await logEmbed(guild, embed);
+		if (finalChannelId) await sendLog(guild, finalChannelId, embed);
+		else await logEmbed(guild, embed);
 	}
 }
 
