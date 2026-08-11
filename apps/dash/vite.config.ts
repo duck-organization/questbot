@@ -14,7 +14,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	resolve: {
 		alias: {
-			'~': path.resolve(__dirname, './app'),
+			'~': path.resolve(import.meta.dirname, './app'),
 		},
 	},
 	plugins: [
