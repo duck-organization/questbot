@@ -7,6 +7,7 @@ import { type Collection, EmbedBuilder, Events, type Message, type PartialMessag
 import { removeConfessionContexts } from '#lib/confessions.js';
 import { deleteGiveawaysByMessageIds } from '#lib/giveaways.js';
 import { isLoggingChannel, logEmbed } from '#lib/logging.js';
+import { removeStarboardPostsByMessages } from '#lib/starboard.js';
 
 export class MessageDeleteBulkListener extends Listener {
 	public constructor(context: Listener.LoaderContext, options: Listener.Options) {
@@ -32,6 +33,7 @@ export class MessageDeleteBulkListener extends Listener {
 
 		await removeConfessionContexts([...messages.keys()]).catch(() => null);
 		await deleteGiveawaysByMessageIds([...messages.keys()]).catch(() => null);
+		await removeStarboardPostsByMessages(guild, [...messages.keys()]).catch(() => null);
 		await logEmbed(guild, embed);
 	}
 }

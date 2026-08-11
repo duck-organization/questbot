@@ -2,13 +2,17 @@
 // Copyright(C) 2026 Vantern
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { prisma } from '@questbot/database';
+import { type Prisma, prisma } from '@questbot/database';
 import {
 	DiscordAPIError,
 	EmbedBuilder,
+	type Guild,
+	type GuildTextBasedChannel,
 	type Message,
 	type MessageReaction,
+	OverwriteType,
 	type PartialUser,
+	PermissionFlagsBits,
 	RESTJSONErrorCodes,
 	type User,
 } from 'discord.js';
@@ -62,6 +66,27 @@ async function countStars(emoji: string, message: Message, posted: Message | nul
 	return stars + mirrored - both;
 }
 
+function appearsAcrossChannels(source: GuildTextBasedChannel, starboard: GuildTextBasedChannel): boolean {
+	if (source.permissionsFor(source.guild.roles.everyone)?.has(PermissionFlagsBits.ViewChannel)) return false;
+
+	for (const role of source.guild.roles.cache.values()) {
+		if (!starboard.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) continue;
+		if (!source.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) return true;
+	}
+
+	const overwrites = starboard.isThread() ? starboard.parent?.permissionOverwrites : starboard.permissionOverwrites;
+
+	for (const overwrite of overwrites?.cache.values() ?? []) {
+		if (overwrite.type !== OverwriteType.Member) continue;
+		if (!overwrite.allow.has(PermissionFlagsBits.ViewChannel)) continue;
+
+		const member = source.guild.members.cache.get(overwrite.id);
+		if (member && !source.permissionsFor(member)?.has(PermissionFlagsBits.ViewChannel)) return true;
+	}
+
+	return false;
+}
+
 function buildStarboardMessage(message: Message<true>, emoji: string, count: number) {
 	const image = [...message.attachments.values()].find((attachment) => attachment.contentType?.startsWith('image/'));
 
@@ -90,8 +115,34 @@ export async function removeStarboardEntry(messageId: string) {
 	await prisma.starboard.deleteMany({ where: { messageId } });
 }
 
-export async function removeStarboardEntriesByChannel(channelId: string) {
-	await prisma.starboard.deleteMany({ where: { channelId } });
+async function purgeStarboardEntries(guild: Guild, where: Prisma.StarboardWhereInput): Promise<void> {
+	const entries = await prisma.starboard.findMany({ where: { ...where, guildId: guild.id } });
+	if (!entries.length) return;
+
+	const settings = await getSettings(guild.id);
+	const starboard = settings.starboardChannelId
+		? await getChannel(guild.client.channels, settings.starboardChannelId)
+		: null;
+
+	if (starboard?.isTextBased()) {
+		await Promise.allSettled(entries.map((entry) => starboard.messages.delete(entry.starboardMessageId)));
+	}
+
+	await prisma.starboard.deleteMany({ where: { messageId: { in: entries.map((entry) => entry.messageId) } } });
+}
+
+export async function clearStarboardEntries(guildId: string): Promise<void> {
+	await prisma.starboard.deleteMany({ where: { guildId } });
+}
+
+export async function removeStarboardPostsByMessages(guild: Guild, messageIds: string[]): Promise<void> {
+	if (!messageIds.length) return;
+
+	await purgeStarboardEntries(guild, { messageId: { in: messageIds } });
+}
+
+export async function removeStarboardPostsByChannel(guild: Guild, channelId: string): Promise<void> {
+	await purgeStarboardEntries(guild, { channelId });
 }
 
 export async function syncStarboard(reaction: MessageReaction, user: User | PartialUser): Promise<void> {
@@ -108,7 +159,7 @@ export async function syncStarboard(reaction: MessageReaction, user: User | Part
 	if (normalize(reactionEmoji(full)) !== normalize(settings.starboardEmoji)) return;
 
 	const channel = await getChannel(reacted.client.channels, settings.starboardChannelId);
-	if (!channel?.isTextBased() || !channel.isSendable()) return;
+	if (!channel?.isTextBased() || channel.isDMBased() || !channel.isSendable()) return;
 
 	const isPost = reacted.author.id === reacted.client.user.id && reacted.channelId === settings.starboardChannelId;
 	const entry = isPost
@@ -140,7 +191,23 @@ export async function syncStarboard(reaction: MessageReaction, user: User | Part
 			return;
 		}
 	} else if (entry) {
-		posted = await channel.messages.fetch(entry.starboardMessageId).catch(() => null);
+		try {
+			posted = await channel.messages.fetch(entry.starboardMessageId);
+		} catch (err: unknown) {
+			if (!(err instanceof DiscordAPIError) || err.code !== RESTJSONErrorCodes.UnknownMessage) return;
+
+			// post removed = forever removed (previously would come back)
+			await removeStarboardEntry(entry.messageId);
+
+			return;
+		}
+	}
+
+	if (appearsAcrossChannels(message.channel, channel)) {
+		await posted?.delete().catch(() => {});
+		if (entry) await removeStarboardEntry(entry.messageId);
+
+		return;
 	}
 
 	const emoji = settings.starboardEmoji;
@@ -161,8 +228,6 @@ export async function syncStarboard(reaction: MessageReaction, user: User | Part
 		if (posted.content !== payload.content) await posted.edit(payload).catch(() => {});
 		return;
 	}
-
-	if (entry) await removeStarboardEntry(message.id);
 
 	const sent = await channel.send(payload).catch(() => null);
 	if (!sent) return;

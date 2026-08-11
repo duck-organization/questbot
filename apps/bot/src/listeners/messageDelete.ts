@@ -7,6 +7,7 @@ import { EmbedBuilder, Events, type Message, type PartialMessage } from 'discord
 import { removeConfessionContext } from '#lib/confessions.js';
 import { deleteGiveawayByMessageId } from '#lib/giveaways.js';
 import { isLoggingChannel, logEmbed, truncate } from '#lib/logging.js';
+import { removeStarboardPostsByMessages } from '#lib/starboard.js';
 
 export class MessageDeleteListener extends Listener<typeof Events.MessageDelete> {
 	public constructor(context: Listener.LoaderContext, options: Listener.Options) {
@@ -38,6 +39,7 @@ export class MessageDeleteListener extends Listener<typeof Events.MessageDelete>
 
 		await removeConfessionContext(message.id).catch(() => null);
 		await deleteGiveawayByMessageId(message.id).catch(() => null);
+		await removeStarboardPostsByMessages(guild, [message.id]).catch(() => null);
 		await logEmbed(guild, embed);
 	}
 }
