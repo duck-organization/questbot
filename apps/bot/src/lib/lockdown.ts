@@ -4,7 +4,7 @@
 
 import { prisma } from '@questbot/database';
 import { EmbedBuilder, type Guild, PermissionFlagsBits } from 'discord.js';
-import { HONEYPOT_CHANNEL_NAME } from '#lib/honeypot.js';
+import { getSettings } from '#lib/settings.js';
 
 export type LockdownResult = { affected: number; skipped: number };
 
@@ -19,6 +19,7 @@ export async function lockdownServer(guild: Guild, reason: string): Promise<Lock
 	if (!me) return { affected: 0, skipped: 0 };
 
 	const everyone = guild.roles.everyone;
+	const settings = await getSettings(guild.id);
 
 	await prisma.server.upsert({
 		where: { id: guild.id },
@@ -39,7 +40,7 @@ export async function lockdownServer(guild: Guild, reason: string): Promise<Lock
 
 	for (const channel of channels.values()) {
 		if (!channel?.isTextBased() || channel.isThread()) continue;
-		if (channel.name === HONEYPOT_CHANNEL_NAME) continue; // the trap only works while it stays open
+		if (channel.id === settings.honeypotChannelId) continue;
 
 		const everyonePerms = channel.permissionsFor(everyone);
 		if (!everyonePerms.has(PermissionFlagsBits.ViewChannel)) continue;
