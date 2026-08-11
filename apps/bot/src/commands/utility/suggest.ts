@@ -12,6 +12,7 @@ export class SuggestCommand extends Command {
 		super(context, {
 			...options,
 			preconditions: ['devMode'],
+			// i forgot sapphire had a built-in cooldown! :D
 			cooldownDelay: 60_000,
 			cooldownLimit: 1,
 			cooldownScope: BucketScope.User,

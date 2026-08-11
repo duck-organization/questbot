@@ -149,7 +149,8 @@ export class SetupCommand extends Command {
 		let settings = await getSettings(guildId);
 		const summary: string[] = [];
 
-		const applySettings = async (patch: Partial<ServerSettings>) => { // migration from just "settings = " as we now also log changes
+		const applySettings = async (patch: Partial<ServerSettings>) => {
+			// migration from just "settings = " as we now also log changes
 			const before = settings;
 			settings = await updateSettings(guildId, guild.name, patch);
 

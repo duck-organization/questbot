@@ -69,7 +69,8 @@ model Verification {
 model Server {
   id               String   @id
   name             String
-  blacklisted      Boolean  @default(false)
+  blacklisted      Boolean  @default(false) // unused but in the future could be used to blacklist an entire server
+  locked           Boolean  @default(false)
   nextTicketNumber Int      @default(1)
   settings         Json     @default("{}")
   createdAt        DateTime @default(now())
@@ -267,6 +268,9 @@ model Channel {
   guildId             String
   stickyContent       String?
   stickyMessageId     String?
+  locked              Boolean  @default(false)
+  lockedDown          Boolean  @default(false)
+  lockdownMessageId   String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

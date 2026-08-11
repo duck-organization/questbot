@@ -547,7 +547,8 @@ export class SettingsCommand extends Command {
 
 			const settings = await normalizeTicketSettings(guildId, guild, await getSettings(guildId));
 
-			const applySettings = async (i: MessageComponentInteraction, patch: Partial<ServerSettings>) => { // migration from "updateSettings" as we now also log changes
+			const applySettings = async (i: MessageComponentInteraction, patch: Partial<ServerSettings>) => {
+				// migration from "updateSettings" as we now also log changes
 				const before = await getSettings(guildId);
 				const next = await updateSettings(guildId, guild.name, patch);
 

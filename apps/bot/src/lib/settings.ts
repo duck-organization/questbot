@@ -77,7 +77,7 @@ export const SETTING_LABELS: Record<keyof ServerSettings, { category: string; na
 	scamProtectionEnabled: { category: 'Scam Protection', name: 'Status' },
 	scamProtectionAction: { category: 'Scam Protection', name: 'Action' },
 	scamProtectionExemptionRole: { category: 'Scam Protection', name: 'Exemption Role' },
-	
+
 	honeypotChannelId: { category: 'Honey Pot', name: 'Channel' },
 };
 
