@@ -14,6 +14,13 @@ export class MessageUpdateListener extends Listener {
 	public async run(oldMsg: Message | PartialMessage, newMsg: Message) {
 		const guild = newMsg.guild ?? oldMsg?.guild;
 		if (!guild) return;
+
+		//* this one line is important, it ignores our own messages as we consider them noise
+		if (newMsg.author?.id === newMsg.client.user.id) return;
+
+		// discord also sends out updates for embeds (and pins) so this will filter out those
+		if (!newMsg.editedTimestamp) return;
+
 		if (await isLoggingChannel(guild, newMsg.channel?.id ?? oldMsg?.channel?.id)) return;
 
 		const oldContent = oldMsg?.content ?? '';
@@ -33,13 +40,14 @@ export class MessageUpdateListener extends Listener {
 
 		const beforeValue = truncate(beforeParts.join('\n'), 1024) || '-';
 		const afterValue = truncate(afterParts.join('\n'), 1024) || '-';
+		const authorId = newMsg.author?.id ?? oldMsg?.author?.id;
 
 		const embed = new EmbedBuilder()
 			.setTitle('Message Edited')
 			.setColor(0xfac898)
 			.addFields(
 				{ name: 'Message', value: newMsg.url ?? 'Unknown', inline: true },
-				{ name: 'Author', value: newMsg.author?.tag ?? oldMsg?.author?.tag ?? 'Unknown', inline: true },
+				{ name: 'Author', value: authorId ? `<@${authorId}>` : 'Unknown', inline: true },
 				{ name: 'Before', value: beforeValue },
 				{ name: 'After', value: afterValue },
 			)

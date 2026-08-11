@@ -4,6 +4,7 @@
 
 import { Command } from '@sapphire/framework';
 import {
+	EmbedBuilder,
 	type GuildTextBasedChannel,
 	MessageFlags,
 	PermissionFlagsBits,
@@ -12,6 +13,7 @@ import {
 	type SlashCommandSubcommandBuilder,
 } from 'discord.js';
 import { containsBlockedWord } from '#lib/automod.js';
+import { logEmbed, truncate } from '#lib/logging.js';
 import { getSticky, removeSticky, repostSticky, setSticky } from '#lib/sticky.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -113,6 +115,18 @@ export class StickyCommand extends Command {
 			const sticky = await setSticky(interaction.guildId, interaction.guild.name, channel.id, content);
 			await repostSticky(channel, sticky, true);
 
+			const logEntry = new EmbedBuilder()
+				.setTitle('Sticky Message Set')
+				.setColor(0x77dd76)
+				.addFields(
+					{ name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
+					{ name: 'Channel', value: channel.toString(), inline: true },
+					{ name: 'Message', value: truncate(content) || '-', inline: false }, // if this actually shows up as '-' then my security researcher would probably kill me and send me questbot's gh advisories
+				)
+				.setTimestamp();
+
+			await logEmbed(interaction.guild, logEntry);
+
 			await interaction.reply({
 				embeds: [successEmbed(`${emojis.rightArrow1} Sticky message set for this channel.`)],
 				flags: MessageFlags.Ephemeral,
@@ -142,6 +156,18 @@ export class StickyCommand extends Command {
 			if (sticky?.stickyMessageId) {
 				await channel.messages.delete(sticky.stickyMessageId).catch(() => {});
 			}
+
+			const logEntry = new EmbedBuilder()
+				.setTitle('Sticky Message Removed')
+				.setColor(0xff6962)
+				.addFields(
+					{ name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
+					{ name: 'Channel', value: channel.toString(), inline: true },
+					{ name: 'Message', value: truncate(sticky?.stickyContent) || '-', inline: false },
+				)
+				.setTimestamp();
+
+			await logEmbed(interaction.guild, logEntry);
 
 			await interaction.reply({
 				embeds: [successEmbed(`${emojis.rightArrow1} Sticky message removed from this channel.`)],

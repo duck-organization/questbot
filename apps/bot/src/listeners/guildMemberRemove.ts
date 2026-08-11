@@ -38,7 +38,7 @@ export class GuildMemberRemoveListener extends Listener<typeof Events.GuildMembe
 			.setTimestamp();
 
 		if (kickEntry?.executor) {
-			embed.addFields({ name: 'Moderator', value: `${kickEntry.executor.tag}`, inline: true });
+			embed.addFields({ name: 'Moderator', value: `<@${kickEntry.executor.id}>`, inline: true });
 		}
 
 		if (kickEntry?.reason) {

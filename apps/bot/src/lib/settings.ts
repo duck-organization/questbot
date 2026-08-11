@@ -49,6 +49,38 @@ export const DefaultSettings: ServerSettings = {
 	honeypotChannelId: null,
 };
 
+// used for logging setting changes
+// update: originally was done as only the setting name, now also contains category
+export const SETTING_LABELS: Record<keyof ServerSettings, { category: string; name: string }> = {
+	welcomePeople: { category: 'Welcome', name: 'Status' },
+	welcomeChannelId: { category: 'Welcome', name: 'Channel' },
+
+	ticketCategoryId: { category: 'Tickets', name: 'Category' },
+	ticketTranscriptChannelId: { category: 'Tickets', name: 'Transcript Channel' },
+	staffRole: { category: 'Tickets', name: 'Staff Role' },
+
+	confessionChannelId: { category: 'Confessions', name: 'Channel' },
+	confessionEnabled: { category: 'Confessions', name: 'Status' },
+
+	loggingEnabled: { category: 'Logging', name: 'Status' },
+	loggingChannelId: { category: 'Logging', name: 'Channel' },
+
+	haikuEnabled: { category: 'Haiku', name: 'Status' },
+
+	autoPublisher: { category: 'Auto Publisher', name: 'Status' },
+
+	starboardEnable: { category: 'Starboard', name: 'Status' },
+	starboardChannelId: { category: 'Starboard', name: 'Channel' },
+	starboardRequirement: { category: 'Starboard', name: 'Reactions Required' },
+	starboardEmoji: { category: 'Starboard', name: 'Emoji' },
+
+	scamProtectionEnabled: { category: 'Scam Protection', name: 'Status' },
+	scamProtectionAction: { category: 'Scam Protection', name: 'Action' },
+	scamProtectionExemptionRole: { category: 'Scam Protection', name: 'Exemption Role' },
+
+	honeypotChannelId: { category: 'Honey Pot', name: 'Channel' },
+};
+
 // caching rather than ending up fetching the settings basically each message
 const settingsCache = new Map<string, { settings: ServerSettings; expiresAt: number }>();
 

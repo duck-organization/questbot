@@ -28,12 +28,13 @@ export async function createHoneypot(guild: Guild) {
 	const embed = new EmbedBuilder()
 		.setTitle('🍯 Honey Pot')
 		.setColor(0xffdc67)
-		.setDescription('**DO NOT SEND MESSAGES HERE**\n\nYou will be kicked if you send a message here.');
+		.setDescription('**DO NOT SEND MESSAGES HERE**')
+		.setFooter({ text: 'You will be kicked if you send a message here.' });
 
 	const learnMore = new ButtonBuilder()
 		.setCustomId(HONEYPOT_LEARN_ID)
 		.setLabel('Learn More')
-		.setStyle(ButtonStyle.Primary);
+		.setStyle(ButtonStyle.Secondary);
 
 	await channel.send({
 		embeds: [embed],

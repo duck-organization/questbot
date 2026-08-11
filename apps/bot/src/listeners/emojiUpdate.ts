@@ -32,11 +32,7 @@ export class EmojiUpdateListener extends Listener<typeof Events.GuildEmojiUpdate
 		}
 
 		if (auditEntry?.executor) {
-			embed.addFields({
-				name: 'Moderator',
-				value: auditEntry.executor.tag ?? auditEntry.executor.username ?? auditEntry.executor.id,
-				inline: true,
-			});
+			embed.addFields({ name: 'Moderator', value: `<@${auditEntry.executor.id}>`, inline: true });
 		}
 
 		await logEmbed(newEmoji.guild, embed);

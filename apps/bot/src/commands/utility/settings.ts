@@ -24,6 +24,7 @@ import {
 	TextInputStyle,
 } from 'discord.js';
 import { createHoneypot, deleteHoneypot } from '#lib/honeypot.js';
+import { logSettingsChange } from '#lib/logging.js';
 import { SCAM_ACTIONS, type ScamAction } from '#lib/scamProtection.js';
 import { getSettings, type ServerSettings, updateSettings } from '#lib/settings.js';
 import { errorEmbed, infoEmbed } from '#utils/embeds.js';
@@ -546,6 +547,16 @@ export class SettingsCommand extends Command {
 
 			const settings = await normalizeTicketSettings(guildId, guild, await getSettings(guildId));
 
+			const applySettings = async (i: MessageComponentInteraction, patch: Partial<ServerSettings>) => {
+				// migration from "updateSettings" as we now also log changes
+				const before = await getSettings(guildId);
+				const next = await updateSettings(guildId, guild.name, patch);
+
+				await logSettingsChange(guild, i.user, before, next);
+
+				return next;
+			};
+
 			if (settingChoice.values[0] === 'welcome') {
 				await settingChoice.update(buildWelcomePanel(settings, guild));
 			} else if (settingChoice.values[0] === 'tickets') {
@@ -576,79 +587,79 @@ export class SettingsCommand extends Command {
 			collector.on('collect', async (i) => {
 				if (i.customId === 'welcomeToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { welcomePeople: enable });
+					const next = await applySettings(i, { welcomePeople: enable });
 
 					await i.update(buildWelcomePanel(next, guild, `Welcome module **${enable ? 'enabled' : 'disabled'}**.`));
 				} else if (i.customId === 'welcomeChannel' && i.isChannelSelectMenu()) {
 					const channelId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { welcomeChannelId: channelId });
+					const next = await applySettings(i, { welcomeChannelId: channelId });
 
 					await i.update(buildWelcomePanel(next, guild, `Welcome channel set to <#${channelId}>.`));
 				} else if (i.customId === 'ticketCategory' && i.isChannelSelectMenu()) {
 					const categoryId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { ticketCategoryId: categoryId });
+					const next = await applySettings(i, { ticketCategoryId: categoryId });
 
 					await i.update(buildTicketPanel(next, guild, `Ticket category set to <#${categoryId}>.`));
 				} else if (i.customId === 'ticketCategoryRemove' && i.isButton()) {
-					const next = await updateSettings(guildId, guild.name, { ticketCategoryId: null });
+					const next = await applySettings(i, { ticketCategoryId: null });
 
 					await i.update(buildTicketPanel(next, guild, 'Ticket category removed.'));
 				} else if (i.customId === 'staffRole' && i.isRoleSelectMenu()) {
 					const roleId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { staffRole: roleId });
+					const next = await applySettings(i, { staffRole: roleId });
 
 					await i.update(buildTicketPanel(next, guild, `Ticket staff role set to <@&${roleId}>.`));
 				} else if (i.customId === 'removeStaffRole' && i.isButton()) {
-					const next = await updateSettings(guildId, guild.name, { staffRole: null });
+					const next = await applySettings(i, { staffRole: null });
 
 					await i.update(buildTicketPanel(next, guild, 'Ticket staff role removed.'));
 				} else if (i.customId === 'ticketTranscriptChannel' && i.isChannelSelectMenu()) {
 					const channelId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { ticketTranscriptChannelId: channelId });
+					const next = await applySettings(i, { ticketTranscriptChannelId: channelId });
 
 					await i.update(buildTicketPanel(next, guild, `Ticket transcript channel set to <#${channelId}>.`));
 				} else if (i.customId === 'removeTranscriptChannel' && i.isButton()) {
-					const next = await updateSettings(guildId, guild.name, { ticketTranscriptChannelId: null });
+					const next = await applySettings(i, { ticketTranscriptChannelId: null });
 
 					await i.update(buildTicketPanel(next, guild, 'Ticket transcript channel removed.'));
 				} else if (i.customId === 'loggingToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { loggingEnabled: enable });
+					const next = await applySettings(i, { loggingEnabled: enable });
 
 					await i.update(buildLoggingPanel(next, guild, `Logging module **${enable ? 'enabled' : 'disabled'}**.`));
 				} else if (i.customId === 'loggingChannel' && i.isChannelSelectMenu()) {
 					const channelId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { loggingChannelId: channelId });
+					const next = await applySettings(i, { loggingChannelId: channelId });
 
 					await i.update(buildLoggingPanel(next, guild, `Logging channel set to <#${channelId}>.`));
 				} else if (i.customId === 'confessionToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { confessionEnabled: enable });
+					const next = await applySettings(i, { confessionEnabled: enable });
 
 					await i.update(buildConfessionPanel(next, guild, `Confessions **${enable ? 'enabled' : 'disabled'}**.`));
 				} else if (i.customId === 'confessionChannel' && i.isChannelSelectMenu()) {
 					const channelId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { confessionChannelId: channelId });
+					const next = await applySettings(i, { confessionChannelId: channelId });
 
 					await i.update(buildConfessionPanel(next, guild, `Confession channel set to <#${channelId}>.`));
 				} else if (i.customId === 'haikuToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { haikuEnabled: enable });
+					const next = await applySettings(i, { haikuEnabled: enable });
 
 					await i.update(buildHaikuPanel(next, `Haiku **${enable ? 'enabled' : 'disabled'}**.`));
 				} else if (i.customId === 'autoPublisherToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { autoPublisher: enable });
+					const next = await applySettings(i, { autoPublisher: enable });
 
 					await i.update(buildAutoPublisherPanel(next, `Auto Publisher **${enable ? 'enabled' : 'disabled'}**.`));
 				} else if (i.customId === 'starboardToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { starboardEnable: enable });
+					const next = await applySettings(i, { starboardEnable: enable });
 
 					await i.update(buildStarboardPanel(next, guild, `Starboard **${enable ? 'enabled' : 'disabled'}**.`));
 				} else if (i.customId === 'starboardChannel' && i.isChannelSelectMenu()) {
 					const channelId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { starboardChannelId: channelId });
+					const next = await applySettings(i, { starboardChannelId: channelId });
 
 					await i.update(buildStarboardPanel(next, guild, `Starboard channel set to <#${channelId}>.`));
 				} else if (i.customId === 'starboardCount' && i.isButton()) {
@@ -679,7 +690,7 @@ export class SettingsCommand extends Command {
 						return;
 					}
 
-					const next = await updateSettings(guildId, guild.name, { starboardRequirement: requirement });
+					const next = await applySettings(i, { starboardRequirement: requirement });
 
 					await submitted.editReply(
 						buildStarboardPanel(
@@ -723,12 +734,12 @@ export class SettingsCommand extends Command {
 						return;
 					}
 
-					const next = await updateSettings(guildId, guild.name, { starboardEmoji: emoji });
+					const next = await applySettings(i, { starboardEmoji: emoji });
 
 					await submitted.editReply(buildStarboardPanel(next, guild, `Starboard emoji set to ${emoji}.`));
 				} else if (i.customId === 'scamProtectionToggle' && i.isStringSelectMenu()) {
 					const enable = i.values[0] === 'enable';
-					const next = await updateSettings(guildId, guild.name, { scamProtectionEnabled: enable });
+					const next = await applySettings(i, { scamProtectionEnabled: enable });
 
 					await i.update(
 						buildScamProtectionPanel(next, guild, `Scam Protection **${enable ? 'enabled' : 'disabled'}**.`),
@@ -738,16 +749,16 @@ export class SettingsCommand extends Command {
 					if (!value || !(value in SCAM_ACTIONS)) return; // exported from lib/scamProtection.ts
 
 					const action = value as ScamAction;
-					const next = await updateSettings(guildId, guild.name, { scamProtectionAction: action });
+					const next = await applySettings(i, { scamProtectionAction: action });
 
 					await i.update(buildScamProtectionPanel(next, guild, `Scam Protection set to **${SCAM_ACTIONS[action]}**.`));
 				} else if (i.customId === 'exemptionRole' && i.isRoleSelectMenu()) {
 					const roleId = i.values[0];
-					const next = await updateSettings(guildId, guild.name, { scamProtectionExemptionRole: roleId });
+					const next = await applySettings(i, { scamProtectionExemptionRole: roleId });
 
 					await i.update(buildScamProtectionPanel(next, guild, `Exemption role set to <@&${roleId}>.`));
 				} else if (i.customId === 'removeExemptionRole' && i.isButton()) {
-					const next = await updateSettings(guildId, guild.name, { scamProtectionExemptionRole: null });
+					const next = await applySettings(i, { scamProtectionExemptionRole: null });
 
 					await i.update(buildScamProtectionPanel(next, guild, 'Exemption role removed.'));
 				} else if (i.customId === 'honeypotCreate' && i.isButton()) {
@@ -775,7 +786,7 @@ export class SettingsCommand extends Command {
 						return;
 					}
 
-					const next = await updateSettings(guildId, guild.name, { honeypotChannelId: channel.id });
+					const next = await applySettings(i, { honeypotChannelId: channel.id });
 
 					await i.editReply(buildHoneypotPanel(next, `Honey Pot channel created at <#${channel.id}>.`));
 				} else if (i.customId === 'honeypotDelete' && i.isButton()) {
@@ -784,7 +795,7 @@ export class SettingsCommand extends Command {
 					const current = await getSettings(guildId);
 					if (current.honeypotChannelId) await deleteHoneypot(guild, current.honeypotChannelId);
 
-					const next = await updateSettings(guildId, guild.name, { honeypotChannelId: null });
+					const next = await applySettings(i, { honeypotChannelId: null });
 
 					await i.editReply(buildHoneypotPanel(next, 'Honey Pot channel deleted.'));
 				}
