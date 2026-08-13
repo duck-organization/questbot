@@ -14,11 +14,11 @@
 Quest Bot is an opensource modern Discord Bot built for moderation, utilities and support!
 
 Quest Bot is capable of:
-- All moderation commands such as: /ban, /kick, /mute & /warn.
-- Autoroles
-- Utilties such as reminders.
-- Complete ticket system.
-- Welcoming new members.
+- All moderation commands such as: /ban, /kick, /mute, /warn, /purge, /slowmode & /lockdown.
+- Automod, with scam protection and a honeypot channel to catch spam bots.
+- Autoroles and a complete ticket system.
+- Utilities such as reminders, AFK statuses, giveaways and suggestions.
+- Welcoming new members, starboard, sticky messages and server logging.
 - Easy setup using /setup.
 - Fun stuff such as confessions!
 
