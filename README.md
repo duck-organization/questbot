@@ -1,6 +1,6 @@
 <div style="text-align: center;">
 
-  <img src=".github/assets/LargeVanternBanner.png" alt="Vantern Banner" />
+  <img src=".github/assets/QuestBanner.png" alt="Quest Banner" />
 
 ---
 
