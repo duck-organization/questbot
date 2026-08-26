@@ -23,13 +23,27 @@ export class ReadyListener extends Listener<typeof Events.ClientReady> {
 
 	public async run(client: Client<true>) {
 		console.log(`Ready! Logged in as ${client.user.tag}`);
-		const status = process.env.STATUS ?? '';
+		const statuses = (process.env.STATUS ?? '')
+			.split(',')
+			.map((status) => status.trim())
+			.filter(Boolean);
 		const shardStatus = process.env.SHARD_STATUS === 'true';
 
-		client.user.setActivity({
-			name: shardStatus ? `${status} | Shard ${client.shard?.ids?.[0] ?? 0}` : status,
-			type: ActivityType.Custom,
-		});
+		const applyStatus = (status: string) => {
+			client.user.setActivity({
+				name: shardStatus ? `${status} | Shard ${client.shard?.ids?.[0] ?? 0}` : status,
+				type: ActivityType.Custom,
+			});
+		};
+
+		// all shards read the exact minute and apply the same status
+		const currentStatus = () => statuses[Math.floor(Date.now() / (60 * 1000)) % statuses.length] ?? '';
+
+		applyStatus(currentStatus());
+
+		if (statuses.length > 1) {
+			setInterval(() => applyStatus(currentStatus()), 5 * 1000); // checks the minute every 5s
+		}
 
 		heartbeat(client);
 		//* all schedulers currently run on a 30s interval
