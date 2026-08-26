@@ -25,6 +25,7 @@ export type ServerSettings = {
 	scamProtectionAction: ScamAction;
 	scamProtectionExemptionRole: string | null;
 	honeypotChannelId: string | null;
+	automodExemptRoleId?: string | null;
 };
 
 export const DefaultSettings: ServerSettings = {
@@ -47,6 +48,7 @@ export const DefaultSettings: ServerSettings = {
 	scamProtectionAction: 'delete',
 	scamProtectionExemptionRole: null,
 	honeypotChannelId: null,
+	automodExemptRoleId: null,
 };
 
 // used for logging setting changes
@@ -79,6 +81,8 @@ export const SETTING_LABELS: Record<keyof ServerSettings, { category: string; na
 	scamProtectionExemptionRole: { category: 'Scam Protection', name: 'Exemption Role' },
 
 	honeypotChannelId: { category: 'Honey Pot', name: 'Channel' },
+
+	automodExemptRoleId: { category: 'Automod', name: 'Exclusion Role' },
 };
 
 // caching rather than ending up fetching the settings basically each message

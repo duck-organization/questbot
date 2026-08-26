@@ -6,16 +6,13 @@ import { Command } from '@sapphire/framework';
 import {
 	ActionRowBuilder,
 	ButtonBuilder,
-	type ButtonInteraction,
 	ButtonStyle,
 	ChannelSelectMenuBuilder,
 	ChannelType,
 	type Guild,
 	InteractionContextType,
-	LabelBuilder,
 	type MessageComponentInteraction,
 	MessageFlags,
-	ModalBuilder,
 	PermissionFlagsBits,
 	RoleSelectMenuBuilder,
 	StringSelectMenuBuilder,
@@ -29,6 +26,7 @@ import { SCAM_ACTIONS, type ScamAction } from '#lib/scamProtection.js';
 import { getSettings, type ServerSettings, updateSettings } from '#lib/settings.js';
 import { errorEmbed, infoEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
+import { promptForModalInput } from '#utils/modals.js';
 
 const STALE_INTERACTION_ERROR_CODES = new Set([10_015, 50_027, 10062]);
 
@@ -406,31 +404,6 @@ function buildHoneypotPanel(settings: ServerSettings, status?: string) {
 	};
 }
 
-async function promptForValue(
-	button: ButtonInteraction,
-	name: string,
-	title: string,
-	label: string,
-	input: TextInputBuilder,
-) {
-	await button.showModal(
-		new ModalBuilder()
-			.setCustomId(name)
-			.setTitle(title)
-			.addLabelComponents(new LabelBuilder().setLabel(label).setTextInputComponent(input)),
-	);
-
-	const submitted = await button
-		.awaitModalSubmit({ filter: (m) => m.customId === name && m.user.id === button.user.id, time: 120_000 })
-		.catch(() => null);
-
-	if (!submitted?.isFromMessage()) return null;
-
-	await submitted.deferUpdate();
-
-	return submitted;
-}
-
 async function normalizeTicketSettings(guildId: string, guild: Guild, settings: ServerSettings) {
 	if (!settings.ticketCategoryId) return settings;
 
@@ -665,7 +638,7 @@ export class SettingsCommand extends Command {
 				} else if (i.customId === 'starboardCount' && i.isButton()) {
 					const current = await getSettings(guildId);
 
-					const submitted = await promptForValue(
+					const submitted = await promptForModalInput(
 						i,
 						'starboardCountModal',
 						'Reactions Required',
@@ -702,7 +675,7 @@ export class SettingsCommand extends Command {
 				} else if (i.customId === 'starboardEmoji' && i.isButton()) {
 					const current = await getSettings(guildId);
 
-					const submitted = await promptForValue(
+					const submitted = await promptForModalInput(
 						i,
 						'starboardEmojiModal',
 						'Starboard Emoji',

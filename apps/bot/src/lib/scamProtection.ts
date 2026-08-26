@@ -4,6 +4,7 @@
 
 import { EmbedBuilder, type Message } from 'discord.js';
 import { applyBan } from '#lib/bans.js';
+import { BurstTracker } from '#lib/burstTracker.js';
 import { logEmbed } from '#lib/logging.js';
 import type { ServerSettings } from '#lib/settings.js';
 
@@ -16,10 +17,7 @@ export const SCAM_ACTIONS = {
 
 export type ScamAction = keyof typeof SCAM_ACTIONS;
 
-type TrackedMessage = { channelId: string; messageId: string; sentAt: number };
-
-// the window is only a 4s so we can just put it in memory
-const recentMessages = new Map<string, TrackedMessage[]>();
+const recentMessages = new BurstTracker(4_000);
 
 export async function enforceScamProtection(message: Message, settings: ServerSettings): Promise<boolean> {
 	if (!settings.scamProtectionEnabled || message.author.bot || !message.inGuild()) return false;
@@ -28,29 +26,20 @@ export async function enforceScamProtection(message: Message, settings: ServerSe
 	if (settings.scamProtectionExemptionRole && message.member?.roles.cache.has(settings.scamProtectionExemptionRole))
 		return false;
 
-	const now = Date.now();
-	const window = now - 4000; // 4s window for the messages
 	const key = `${message.guildId}:${message.author.id}`;
-
-	if (recentMessages.size > 1000) {
-		for (const [tracked, messages] of recentMessages) {
-			if (messages.every((entry) => entry.sentAt <= window)) recentMessages.delete(tracked);
-		}
-	}
-
-	const burst = [
-		...(recentMessages.get(key) ?? []).filter((entry) => entry.sentAt > window),
-		{ channelId: message.channelId, messageId: message.id, sentAt: now },
-	];
+	const burst = recentMessages.record(key, {
+		channelId: message.channelId,
+		messageId: message.id,
+		sentAt: Date.now(),
+	});
 	const channelIds = new Set(burst.map((entry) => entry.channelId));
 
 	if (channelIds.size < 3) {
 		// requirement of it being across 3 channels
-		recentMessages.set(key, burst);
 		return false;
 	}
 
-	recentMessages.delete(key); // delete the tracked messages
+	recentMessages.clear(key);
 
 	const guild = message.guild;
 

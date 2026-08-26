@@ -6,7 +6,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from './generated/prisma/client.js';
 
 export type { PrismaClient } from './generated/prisma/client.js';
-export { Prisma } from './generated/prisma/client.js';
+export { AutoModRuleType, Prisma } from './generated/prisma/client.js';
 
 const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;

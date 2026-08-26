@@ -76,18 +76,18 @@ model Server {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  warns       Warn[]
-  mutes       Mute[]
-  bans        Ban[]
-  reminders   Reminder[]
-  tickets     Ticket[]
-  autoroles   AutoRole[]
-  automods    AutoMod[]
-  confessions Confession[]
-  afks        Afk[]
-  giveaways   Giveaway[]
-  channels    Channel[]
-  starboard   Starboard[]
+  warns        Warn[]
+  mutes        Mute[]
+  bans         Ban[]
+  reminders    Reminder[]
+  tickets      Ticket[]
+  autoroles    AutoRole[]
+  automodRules AutoModRule[]
+  confessions  Confession[]
+  afks         Afk[]
+  giveaways    Giveaway[]
+  channels     Channel[]
+  starboard    Starboard[]
 
   @@map("server")
 }
@@ -180,17 +180,24 @@ model AutoRole {
   @@map("autoroles")
 }
 
-model AutoMod {
-  id        String   @id @default(cuid())
+enum AutoModRuleType {
+  WORD
+  SPAM
+  LINKS
+}
+
+model AutoModRule {
+  id        String          @id @default(cuid())
   guildId   String
-  word      String
-  createdAt DateTime @default(now())
+  type      AutoModRuleType
+  config    Json            @default("{}")
+  createdAt DateTime        @default(now())
 
   server Server @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
-  @@unique([guildId, word])
   @@index([guildId])
-  @@map("automods")
+  @@index([guildId, type])
+  @@map("automod_rules")
 }
 
 model Confession {
@@ -264,15 +271,15 @@ model Starboard {
 }
 
 model Channel {
-  id                  String   @id
-  guildId             String
-  stickyContent       String?
-  stickyMessageId     String?
-  locked              Boolean  @default(false)
-  lockedDown          Boolean  @default(false)
-  lockdownMessageId   String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                String   @id
+  guildId           String
+  stickyContent     String?
+  stickyMessageId   String?
+  locked            Boolean  @default(false)
+  lockedDown        Boolean  @default(false)
+  lockdownMessageId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   server Server @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
