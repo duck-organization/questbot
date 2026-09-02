@@ -87,8 +87,9 @@ function appearsAcrossChannels(source: GuildTextBasedChannel, starboard: GuildTe
 	return false;
 }
 
-function buildStarboardMessage(message: Message<true>, emoji: string, count: number) {
+function buildStarboardMessage(message: Message<true>, emoji: string, count: number, posted: Message | null) {
 	const image = [...message.attachments.values()].find((attachment) => attachment.contentType?.startsWith('image/'));
+	const imageUrl = image?.url ?? posted?.embeds[0]?.image?.url;
 
 	const embed = new EmbedBuilder()
 		.setColor(Colors.info)
@@ -98,7 +99,7 @@ function buildStarboardMessage(message: Message<true>, emoji: string, count: num
 		.setFooter({ text: `ID: ${message.id}` })
 		.setTimestamp(message.createdAt);
 
-	if (image) embed.setImage(image.url);
+	if (imageUrl) embed.setImage(imageUrl);
 
 	return {
 		content: `${emoji} | **${count}**`,
@@ -222,7 +223,7 @@ export async function syncStarboard(reaction: MessageReaction, user: User | Part
 		return;
 	}
 
-	const payload = buildStarboardMessage(message, emoji, count);
+	const payload = buildStarboardMessage(message, emoji, count, posted);
 
 	if (posted) {
 		if (posted.content !== payload.content) await posted.edit(payload).catch(() => {});
