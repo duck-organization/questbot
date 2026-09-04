@@ -14,6 +14,7 @@ import {
 	type SlashCommandStringOption,
 	type SlashCommandUserOption,
 } from 'discord.js';
+import { runConfirmedAction } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -130,32 +131,25 @@ export class KickCommand extends Command {
 			}
 
 			if (confirmation.customId === 'confirm') {
-				try {
-					await interaction.guild.members.kick(targetMember);
-					await targetMember
-						.send(`You have been kicked from **${interaction.guild.name}**.\nReason: ${reason}`)
-						.catch(() => {});
-					await confirmation.update({
-						embeds: [
-							successEmbed(
-								`${emojis.rightArrow2} <@${targetMember.user.id}> has been kicked with reason: ${reason}\nYou must have had a real ick towards that person.`,
-							),
-						],
+				await runConfirmedAction(
+					confirmation,
+					interaction,
+					async () => {
+						await interaction.guild.members.kick(targetMember);
+						await targetMember
+							.send(`You have been kicked from **${interaction.guild.name}**.\nReason: ${reason}`)
+							.catch(() => {});
+					},
+					{
+						success: successEmbed(
+							`${emojis.rightArrow2} <@${targetMember.user.id}> has been kicked with reason: ${reason}\nYou must have had a real ick towards that person.`,
+						),
+						error: errorEmbed(
+							`${emojis.rightArrow2} Failed to kick <@${targetMember.user.id}> with reason: ${reason}\nYou must have had a real ick towards that person.`,
+						),
 						allowedMentions: { parse: [], users: [targetMember.user.id] },
-						components: [],
-					});
-				} catch (err) {
-					console.error(err);
-					await confirmation.update({
-						embeds: [
-							errorEmbed(
-								`${emojis.rightArrow2} Failed to kick <@${targetMember.user.id}> with reason: ${reason}\nYou must have had a real ick towards that person.`,
-							),
-						],
-						allowedMentions: { parse: [], users: [targetMember.user.id] },
-						components: [],
-					});
-				}
+					},
+				);
 			} else if (confirmation.customId === 'cancel') {
 				await confirmation.update({
 					embeds: [infoEmbed(`${emojis.rightArrow2} Cancelled.`)],

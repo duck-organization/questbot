@@ -15,6 +15,7 @@ import {
 	type SlashCommandUserOption,
 } from 'discord.js';
 import { removeMute } from '#lib/mutes.js';
+import { runConfirmedAction } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -115,24 +116,21 @@ export class UnmuteCommand extends Command {
 			}
 
 			if (confirmation.customId === 'confirm') {
-				try {
-					await Promise.all([removeMute(interaction.guild.id, targetMember.id), targetMember.timeout(null, reason)]);
-					await targetMember
-						.send(`You have been unmuted in **${interaction.guild.name}**.\nReason: ${reason}`)
-						.catch(() => {});
-					await confirmation.update({
-						embeds: [successEmbed(`${emojis.rightArrow2} <@${targetMember.id}> has been unmuted. Reason: ${reason}`)],
+				await runConfirmedAction(
+					confirmation,
+					interaction,
+					async () => {
+						await Promise.all([removeMute(interaction.guild.id, targetMember.id), targetMember.timeout(null, reason)]);
+						await targetMember
+							.send(`You have been unmuted in **${interaction.guild.name}**.\nReason: ${reason}`)
+							.catch(() => {});
+					},
+					{
+						success: successEmbed(`${emojis.rightArrow2} <@${targetMember.id}> has been unmuted. Reason: ${reason}`),
+						error: errorEmbed(`${emojis.rightArrow2} Failed to unmute <@${targetMember.id}> with reason: ${reason}`),
 						allowedMentions: { parse: [], users: [targetMember.user.id] },
-						components: [],
-					});
-				} catch (err) {
-					console.error(err);
-					await confirmation.update({
-						embeds: [errorEmbed(`${emojis.rightArrow2} Failed to unmute <@${targetMember.id}> with reason: ${reason}`)],
-						allowedMentions: { parse: [], users: [targetMember.user.id] },
-						components: [],
-					});
-				}
+					},
+				);
 			} else if (confirmation.customId === 'cancel') {
 				await confirmation.update({
 					embeds: [infoEmbed(`${emojis.rightArrow2} Cancelled.`)],

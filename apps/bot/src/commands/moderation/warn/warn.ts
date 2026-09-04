@@ -16,6 +16,7 @@ import {
 import ms, { type StringValue } from 'ms';
 import { logEmbed, truncate } from '#lib/logging.js';
 import { createWarn } from '#lib/warns.js';
+import { runConfirmedAction } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -144,55 +145,50 @@ export class WarnCommand extends Command {
 			}
 
 			if (confirmation.customId === 'confirm') {
-				try {
-					await createWarn(
-						interaction.guild.id,
-						interaction.guild.name,
-						targetMember.id,
-						interaction.user.id,
-						reason,
-						expiresAt,
-					);
-					await targetMember
-						.send(
-							`You have been warned in **${interaction.guild.name}**.\nReason: ${reason}${expiresAt ? `\nExpires: <t:${Math.floor(expiresAt.getTime() / 1000)}:R>` : ''}`,
-						)
-						.catch(() => {});
+				await runConfirmedAction(
+					confirmation,
+					interaction,
+					async () => {
+						await createWarn(
+							interaction.guild.id,
+							interaction.guild.name,
+							targetMember.id,
+							interaction.user.id,
+							reason,
+							expiresAt,
+						);
+						await targetMember
+							.send(
+								`You have been warned in **${interaction.guild.name}**.\nReason: ${reason}${expiresAt ? `\nExpires: <t:${Math.floor(expiresAt.getTime() / 1000)}:R>` : ''}`,
+							)
+							.catch(() => {});
 
-					const logEntry = new EmbedBuilder()
-						.setTitle('Member Warned')
-						.setColor(0xfac898)
-						.addFields(
-							{ name: 'Member', value: `<@${targetMember.id}>`, inline: true },
-							{ name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
-							{ name: 'Reason', value: truncate(reason) || '-', inline: false },
-						)
-						.setTimestamp();
+						const logEntry = new EmbedBuilder()
+							.setTitle('Member Warned')
+							.setColor(0xfac898)
+							.addFields(
+								{ name: 'Member', value: `<@${targetMember.id}>`, inline: true },
+								{ name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
+								{ name: 'Reason', value: truncate(reason) || '-', inline: false },
+							)
+							.setTimestamp();
 
-					if (expiresAt) {
-						logEntry.addFields({
-							name: 'Expires',
-							value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`,
-							inline: true,
-						});
-					}
+						if (expiresAt) {
+							logEntry.addFields({
+								name: 'Expires',
+								value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`,
+								inline: true,
+							});
+						}
 
-					await logEmbed(interaction.guild, logEntry);
-					await confirmation.update({
-						embeds: [
-							successEmbed(`${emojis.rightArrow2} <@${targetMember.id}> has been warned with reason: ${reason}`),
-						],
+						await logEmbed(interaction.guild, logEntry);
+					},
+					{
+						success: successEmbed(`${emojis.rightArrow2} <@${targetMember.id}> has been warned with reason: ${reason}`),
+						error: errorEmbed(`${emojis.rightArrow2} Failed to warn <@${targetMember.id}>`),
 						allowedMentions: { parse: [], users: [targetMember.user.id] },
-						components: [],
-					});
-				} catch (err) {
-					console.error(err);
-					await confirmation.update({
-						embeds: [errorEmbed(`${emojis.rightArrow2} Failed to warn <@${targetMember.id}>`)],
-						allowedMentions: { parse: [], users: [targetMember.user.id] },
-						components: [],
-					});
-				}
+					},
+				);
 			} else if (confirmation.customId === 'cancel') {
 				await confirmation.update({ embeds: [infoEmbed(`${emojis.rightArrow2} Cancelled.`)], components: [] });
 			}

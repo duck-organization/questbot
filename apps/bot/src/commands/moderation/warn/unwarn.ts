@@ -14,6 +14,7 @@ import {
 	type SlashCommandStringOption,
 } from 'discord.js';
 import { getWarn, removeWarn } from '#lib/warns.js';
+import { runConfirmedAction } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -130,29 +131,27 @@ export class UnwarnCommand extends Command {
 			}
 
 			if (confirmation.customId === 'confirm') {
-				try {
-					await removeWarn(warn.id);
-					const user = await interaction.client.users.fetch(warn.userId);
-					await user
-						.send(`Your warn for ${warn.reason} in **${interaction.guild.name}** has been removed.\nReason: ${reason}`)
-						.catch(() => {});
-					await confirmation.update({
-						embeds: [
-							successEmbed(
-								`${emojis.rightArrow2} \`${warn.id}\` has been removed from <@${warn.userId}>. Reason: ${reason}`,
-							),
-						],
+				await runConfirmedAction(
+					confirmation,
+					interaction,
+					async () => {
+						await removeWarn(warn.id);
+						const user = await interaction.client.users.fetch(warn.userId);
+						await user
+							.send(
+								`Your warn for ${warn.reason} in **${interaction.guild.name}** has been removed.\nReason: ${reason}`,
+							)
+							.catch(() => {});
+					},
+					{
+						success: successEmbed(
+							`${emojis.rightArrow2} \`${warn.id}\` has been removed from <@${warn.userId}>. Reason: ${reason}`,
+						),
+						error: errorEmbed(`${emojis.rightArrow2} Failed to remove warn \`${warn.id}\` from <@${warn.userId}>.`),
 						allowedMentions: { parse: [], users: [warn.userId] },
-						components: [],
-					});
-				} catch (err) {
-					console.error(`Failed to remove warn ${warn.id}:`, err);
-					await confirmation.update({
-						embeds: [errorEmbed(`${emojis.rightArrow2} Failed to remove warn \`${warn.id}\` from <@${warn.userId}>.`)],
-						allowedMentions: { parse: [], users: [warn.userId] },
-						components: [],
-					});
-				}
+					},
+					(err) => console.error(`Failed to remove warn ${warn.id}:`, err),
+				);
 			} else if (confirmation.customId === 'cancel') {
 				await confirmation.update({
 					embeds: [infoEmbed(`${emojis.rightArrow2} Cancelled.`)],
