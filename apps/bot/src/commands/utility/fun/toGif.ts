@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { Command } from '@sapphire/framework';
-import { AttachmentBuilder, type SlashCommandStringOption } from 'discord.js';
+import { AttachmentBuilder, type SlashCommandAttachmentOption, type SlashCommandStringOption } from 'discord.js';
 import sharp from 'sharp';
 import { readLimited, SafeFetchError, safeFetch } from '#lib/safeFetch.js';
 import { errorEmbed } from '#utils/embeds.js';
@@ -24,23 +24,45 @@ export class ToGifCommand extends Command {
 		registry.registerChatInputCommand((builder) =>
 			builder
 				.setName('togif')
-				.setDescription('Convert a PNG, JPEG, or WEBP image URL to a GIF.')
+				.setDescription('Convert a PNG, JPEG, or WEBP image to a GIF.')
 				.addStringOption((option: SlashCommandStringOption) =>
-					option.setName('url').setDescription('The image URL to convert.').setRequired(true).setMaxLength(512),
+					option.setName('url').setDescription('The image URL to convert.').setMaxLength(512),
+				)
+				.addAttachmentOption((option: SlashCommandAttachmentOption) =>
+					option.setName('file').setDescription('The image file to convert.'),
 				),
 		);
 	}
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-		const url = interaction.options.getString('url', true);
+		const url = interaction.options.getString('url');
+		const file = interaction.options.getAttachment('file');
+
+		if (!url && !file) {
+			await interaction.reply({
+				embeds: [errorEmbed(`${emojis.rightArrow1} Provide either an image URL or a file to convert.`)],
+				ephemeral: true,
+			});
+			return;
+		}
+
+		if (url && file) {
+			await interaction.reply({
+				embeds: [errorEmbed(`${emojis.rightArrow1} Provide either an image URL or file, not both.`)],
+				ephemeral: true,
+			});
+			return;
+		}
 
 		await interaction.deferReply();
 
+		const sourceUrl = file ? file.url : url!;
+
 		let response: Response;
 		try {
-			response = await safeFetch(url);
+			response = await safeFetch(sourceUrl);
 		} catch (err) {
-			const msg = err instanceof SafeFetchError ? err.message : 'Failed to fetch the URL.';
+			const msg = err instanceof SafeFetchError ? err.message : `Failed to fetch the ${file ? 'file' : 'URL'}.`;
 			await interaction.editReply({ embeds: [errorEmbed(`${emojis.rightArrow1} ${msg}`)] });
 			return;
 		}
