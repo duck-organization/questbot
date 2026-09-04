@@ -21,6 +21,8 @@ import {
 	TextInputStyle,
 } from 'discord.js';
 import {
+	AUTOMOD_ACTIONS,
+	type AutoModAction,
 	type AutoModRuleRow,
 	autoModDescription,
 	createLinksRule,
@@ -47,27 +49,26 @@ function cancelledEmbed() {
 	return infoEmbed(`${emojis.rightArrow2} Cancelled.`);
 }
 
-async function promptForChoice(
-	interaction: Command.ChatInputCommandInteraction<'cached'>,
-	menu: StringSelectMenuBuilder,
-	promptText: string,
-) {
+async function promptForChoice(interaction: RepliableInteraction, menu: StringSelectMenuBuilder, promptText: string) {
 	const cancelButton = new ButtonBuilder()
 		.setCustomId('automodCancel')
 		.setLabel('Cancel')
 		.setStyle(ButtonStyle.Secondary);
 
-	const response = await interaction.reply({
+	const payload = {
 		embeds: [infoEmbed(promptText)],
 		components: [
 			new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu),
 			new ActionRowBuilder<ButtonBuilder>().addComponents(cancelButton),
 		],
-		flags: MessageFlags.Ephemeral,
-		withResponse: true,
-	});
+	};
 
-	const choice = await awaitMessageComponentSafe(response.resource!.message!, {
+	const message =
+		interaction.deferred || interaction.replied
+			? await interaction.editReply(payload)
+			: (await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral, withResponse: true })).resource!.message!;
+
+	const choice = await awaitMessageComponentSafe(message, {
 		filter: (i: MessageComponentInteraction) => i.user.id === interaction.user.id,
 		time: 60_000,
 	});
@@ -83,6 +84,29 @@ async function promptForChoice(
 	}
 
 	return choice;
+}
+
+async function promptForAction(interaction: RepliableInteraction) {
+	const actionMenu = new StringSelectMenuBuilder()
+		.setCustomId('automodAction')
+		.setPlaceholder('Choose an action')
+		.addOptions(
+			Object.entries(AUTOMOD_ACTIONS).map(([action, label]) =>
+				new StringSelectMenuOptionBuilder().setLabel(label).setValue(action),
+			),
+		);
+
+	const choice = await promptForChoice(
+		interaction,
+		actionMenu,
+		`${emojis.rightArrow1} Choose an action to take when this rule is triggered:`,
+	);
+
+	if (!choice) return null;
+
+	await choice.deferUpdate();
+
+	return { interaction: choice, action: choice.values[0] as AutoModAction };
 }
 
 export class AutoModCommand extends Command {
@@ -209,13 +233,14 @@ export class AutoModCommand extends Command {
 		const rule = interaction.options.getString('rule', true) as 'WORD' | 'SPAM' | 'LINKS';
 
 		if (rule === 'LINKS') {
-			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+			const chosen = await promptForAction(interaction);
+			if (!chosen) return;
 
 			try {
-				const created = await createLinksRule(interaction.guildId, interaction.guild.name);
-				await this.ruleSuccess(interaction, created);
+				const created = await createLinksRule(interaction.guildId, interaction.guild.name, chosen.action);
+				await this.ruleSuccess(chosen.interaction, created);
 			} catch (err) {
-				await this.ruleError(interaction, err);
+				await this.ruleError(chosen.interaction, err);
 			}
 			return;
 		}
@@ -282,16 +307,20 @@ export class AutoModCommand extends Command {
 			return;
 		}
 
+		const chosen = await promptForAction(submitted);
+		if (!chosen) return;
+
 		try {
 			const created = await createWordRule(
 				interaction.guildId,
 				interaction.guild.name,
 				method,
 				method === 'WORD' ? pattern.toLowerCase() : pattern,
+				chosen.action,
 			);
-			await this.ruleSuccess(submitted, created);
+			await this.ruleSuccess(chosen.interaction, created);
 		} catch (err) {
-			await this.ruleError(submitted, err);
+			await this.ruleError(chosen.interaction, err);
 		}
 	}
 
@@ -349,11 +378,20 @@ export class AutoModCommand extends Command {
 			return;
 		}
 
+		const chosen = await promptForAction(submitted);
+		if (!chosen) return;
+
 		try {
-			const created = await createSpamRule(interaction.guildId, interaction.guild.name, range, threshold);
-			await this.ruleSuccess(submitted, created);
+			const created = await createSpamRule(
+				interaction.guildId,
+				interaction.guild.name,
+				range,
+				threshold,
+				chosen.action,
+			);
+			await this.ruleSuccess(chosen.interaction, created);
 		} catch (err) {
-			await this.ruleError(submitted, err);
+			await this.ruleError(chosen.interaction, err);
 		}
 	}
 

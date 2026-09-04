@@ -22,7 +22,6 @@ import {
 } from 'discord.js';
 import { createHoneypot, deleteHoneypot } from '#lib/honeypot.js';
 import { logSettingsChange } from '#lib/logging.js';
-import { SCAM_ACTIONS, type ScamAction } from '#lib/scamProtection.js';
 import { getSettings, type ServerSettings, updateSettings } from '#lib/settings.js';
 import { errorEmbed, infoEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -324,61 +323,6 @@ function buildStarboardPanel(settings: ServerSettings, guild: Guild, status?: st
 	};
 }
 
-function buildScamProtectionPanel(settings: ServerSettings, guild: Guild, status?: string) {
-	const toggleMenu = new StringSelectMenuBuilder()
-		.setCustomId('scamProtectionToggle')
-		.setPlaceholder(`${settings.scamProtectionEnabled ? 'Enabled' : 'Disabled'}`)
-		.addOptions(
-			new StringSelectMenuOptionBuilder()
-				.setLabel('Enable')
-				.setDescription('Act on members spamming across channels.')
-				.setValue('enable'),
-			new StringSelectMenuOptionBuilder()
-				.setLabel('Disable')
-				.setDescription("Don't watch for spam.")
-				.setValue('disable'),
-		);
-
-	const actionMenu = new StringSelectMenuBuilder()
-		.setCustomId('scamProtectionAction')
-		.setPlaceholder(SCAM_ACTIONS[settings.scamProtectionAction])
-		.addOptions(
-			Object.entries(SCAM_ACTIONS).map(([action, label]) =>
-				new StringSelectMenuOptionBuilder().setLabel(label).setValue(action),
-			),
-		);
-
-	const currentExemptionRole = settings.scamProtectionExemptionRole
-		? guild.roles.cache.get(settings.scamProtectionExemptionRole)?.name
-		: null;
-
-	const exemptionRole = new RoleSelectMenuBuilder()
-		.setCustomId('exemptionRole')
-		.setPlaceholder(currentExemptionRole ?? 'Select a role that bypasses scam protection');
-
-	const removeExemptionRoleButton = new ButtonBuilder()
-		.setCustomId('removeExemptionRole')
-		.setLabel('Remove Exemption Role')
-		.setStyle(ButtonStyle.Danger)
-		.setDisabled(!settings.scamProtectionExemptionRole);
-
-	return {
-		embeds: [
-			infoEmbed(
-				status
-					? `${emojis.rightArrow1} **Scam Protection** module:\n${emojis.rightArrow2} ${status}`
-					: `${emojis.rightArrow1} **Scam Protection** module:\n${emojis.rightArrow2} Warning! Please make sure I at least have **Manage Messages** (and *Kick Members* or *Ban Members* for those actions).`,
-			),
-		],
-		components: [
-			new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(toggleMenu),
-			new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(actionMenu),
-			new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(exemptionRole),
-			new ActionRowBuilder<ButtonBuilder>().addComponents(removeExemptionRoleButton),
-		],
-	};
-}
-
 function buildHoneypotPanel(settings: ServerSettings, status?: string) {
 	const createButton = new ButtonBuilder()
 		.setCustomId('honeypotCreate')
@@ -474,10 +418,6 @@ export class SettingsCommand extends Command {
 					.setDescription('Send messages in a channel when they get enough reactions.')
 					.setValue('starboard'),
 				new StringSelectMenuOptionBuilder()
-					.setLabel('Scam Protection')
-					.setDescription('Stop members from spamming across several channels at once.')
-					.setValue('scamProtection'),
-				new StringSelectMenuOptionBuilder()
 					.setLabel('Honey Pot')
 					.setDescription('Trap bots with a channel that kicks anyone who posts in it.')
 					.setValue('honeypot'),
@@ -544,8 +484,6 @@ export class SettingsCommand extends Command {
 				await settingChoice.update(buildAutoPublisherPanel(settings));
 			} else if (settingChoice.values[0] === 'starboard') {
 				await settingChoice.update(buildStarboardPanel(settings, guild));
-			} else if (settingChoice.values[0] === 'scamProtection') {
-				await settingChoice.update(buildScamProtectionPanel(settings, guild));
 			} else if (settingChoice.values[0] === 'honeypot') {
 				await settingChoice.update(buildHoneypotPanel(settings));
 			} else {
@@ -710,30 +648,6 @@ export class SettingsCommand extends Command {
 					const next = await applySettings(i, { starboardEmoji: emoji });
 
 					await submitted.editReply(buildStarboardPanel(next, guild, `Starboard emoji set to ${emoji}.`));
-				} else if (i.customId === 'scamProtectionToggle' && i.isStringSelectMenu()) {
-					const enable = i.values[0] === 'enable';
-					const next = await applySettings(i, { scamProtectionEnabled: enable });
-
-					await i.update(
-						buildScamProtectionPanel(next, guild, `Scam Protection **${enable ? 'enabled' : 'disabled'}**.`),
-					);
-				} else if (i.customId === 'scamProtectionAction' && i.isStringSelectMenu()) {
-					const value = i.values[0];
-					if (!value || !(value in SCAM_ACTIONS)) return; // exported from lib/scamProtection.ts
-
-					const action = value as ScamAction;
-					const next = await applySettings(i, { scamProtectionAction: action });
-
-					await i.update(buildScamProtectionPanel(next, guild, `Scam Protection set to **${SCAM_ACTIONS[action]}**.`));
-				} else if (i.customId === 'exemptionRole' && i.isRoleSelectMenu()) {
-					const roleId = i.values[0];
-					const next = await applySettings(i, { scamProtectionExemptionRole: roleId });
-
-					await i.update(buildScamProtectionPanel(next, guild, `Exemption role set to <@&${roleId}>.`));
-				} else if (i.customId === 'removeExemptionRole' && i.isButton()) {
-					const next = await applySettings(i, { scamProtectionExemptionRole: null });
-
-					await i.update(buildScamProtectionPanel(next, guild, 'Exemption role removed.'));
 				} else if (i.customId === 'honeypotCreate' && i.isButton()) {
 					await i.deferUpdate();
 

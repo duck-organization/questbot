@@ -4,12 +4,21 @@
 
 import { type AutoModRuleType, Prisma, prisma } from '@questbot/database';
 import { EmbedBuilder, type Message, PermissionFlagsBits } from 'discord.js';
+import { applyBan } from './bans.js';
 import { BurstTracker } from './burstTracker.js';
 import { LIMITS_ENABLED, LimitError } from './limits.js';
 import { logEmbed } from './logging.js';
 import type { ServerSettings } from './settings.js';
 
 const MAX_RULES = 20;
+
+export const AUTOMOD_ACTIONS = {
+	delete: 'Delete messages',
+	kickDelete: 'Kick + delete messages',
+	banDelete: 'Ban + delete messages',
+} as const;
+
+export type AutoModAction = keyof typeof AUTOMOD_ACTIONS;
 
 export class DuplicateAutoModRuleError extends Error {
 	public constructor(message: string) {
@@ -55,9 +64,9 @@ export function checkRegex(pattern: string): void {
 }
 
 // rule types
-export type WordRuleConfig = { method: 'WORD' | 'REGEX'; pattern: string };
-export type SpamRuleConfig = { range: 'ALL_CHANNELS' | 'PER_CHANNEL'; threshold: number; action: 'DELETE' };
-export type LinksRuleConfig = Record<string, never>;
+export type WordRuleConfig = { method: 'WORD' | 'REGEX'; pattern: string; action: AutoModAction };
+export type SpamRuleConfig = { range: 'ALL_CHANNELS' | 'PER_CHANNEL'; threshold: number; action: AutoModAction };
+export type LinksRuleConfig = { action: AutoModAction };
 
 // for the auto mod (rule) row
 type RuleBase = { id: string; guildId: string; createdAt: Date };
@@ -96,7 +105,6 @@ function validateRule(row: {
 	}
 
 	const rule = row as AutoModRuleRow;
-
 	if (rule.type === 'WORD' && rule.config.method === 'REGEX') {
 		try {
 			rule.compiledPattern = new RegExp(rule.config.pattern, 'i');
@@ -175,14 +183,20 @@ async function createRule<Config extends Prisma.InputJsonValue>(
 	throw new Error('unreachable');
 }
 
-export async function createWordRule(guildId: string, guildName: string, method: 'WORD' | 'REGEX', pattern: string) {
+export async function createWordRule(
+	guildId: string,
+	guildName: string,
+	method: 'WORD' | 'REGEX',
+	pattern: string,
+	action: AutoModAction,
+) {
 	if (!pattern?.trim()) {
 		throw new Error('The word or pattern cannot be empty.');
 	}
 
 	if (method === 'REGEX') checkRegex(pattern);
 
-	const config: WordRuleConfig = { method, pattern };
+	const config: WordRuleConfig = { method, pattern, action };
 
 	return createRule(
 		guildId,
@@ -203,8 +217,9 @@ export async function createSpamRule(
 	guildName: string,
 	range: 'ALL_CHANNELS' | 'PER_CHANNEL',
 	threshold: number,
+	action: AutoModAction,
 ) {
-	const config: SpamRuleConfig = { range, threshold, action: 'DELETE' };
+	const config: SpamRuleConfig = { range, threshold, action };
 
 	return createRule(
 		guildId,
@@ -216,8 +231,8 @@ export async function createSpamRule(
 	);
 }
 
-export async function createLinksRule(guildId: string, guildName: string) {
-	const config: LinksRuleConfig = {};
+export async function createLinksRule(guildId: string, guildName: string, action: AutoModAction) {
+	const config: LinksRuleConfig = { action };
 
 	return createRule(
 		guildId,
@@ -246,15 +261,17 @@ export async function removeAutoModRule(ruleId: string) {
 }
 
 export function autoModDescription(rule: AutoModRuleRow): string {
+	const action = AUTOMOD_ACTIONS[rule.config.action];
+
 	if (rule.type === 'WORD') {
-		return `Block messages containing ${rule.config.method === 'REGEX' ? 'regex: ' : 'the word: '} ${rule.config.pattern}`;
+		return `Block messages containing ${rule.config.method === 'REGEX' ? 'regex: ' : 'the word: '} ${rule.config.pattern} (${action})`;
 	}
 
 	if (rule.type === 'SPAM') {
-		return `Prevent spam ${rule.config.range === 'PER_CHANNEL' ? 'per channel' : 'across all channels'}, message threshold ${rule.config.threshold} per 5s`;
+		return `Prevent spam ${rule.config.range === 'PER_CHANNEL' ? 'per channel' : 'across all channels'}, message threshold ${rule.config.threshold} per 5s (${action})`;
 	}
 
-	return 'Block messages containing links';
+	return `Block messages containing links (${action})`;
 }
 
 function checkWordRule(rule: Extract<AutoModRuleRow, { type: 'WORD' }>, text: string, lowerText: string): boolean {
@@ -280,6 +297,16 @@ async function blockMessage(message: Message, reason: string): Promise<void> {
 			? channel.send(`<@${message.author.id}>, ${reason}`).catch((err) => console.error(err))
 			: undefined,
 	]);
+}
+
+async function applyAutoModAction(message: Message, action: AutoModAction, reason: string): Promise<void> {
+	if (!message.inGuild()) return;
+
+	if (action === 'kickDelete' && message.member?.kickable) {
+		await message.member.kick(reason).catch((err) => console.error(err));
+	} else if (action === 'banDelete') {
+		await applyBan(message.guild, message.author.id, reason);
+	}
 }
 
 async function logAutoMod(message: Message, rule: AutoModRuleRow, title: string): Promise<void> {
@@ -333,6 +360,7 @@ async function checkSpamRule(message: Message, rule: Extract<AutoModRuleRow, { t
 					.catch(() => {})
 			: undefined,
 		logAutoMod(message, rule, 'Spam'),
+		applyAutoModAction(message, config.action, 'Automod: spam rule triggered.'),
 	]);
 
 	return true;
@@ -360,6 +388,7 @@ export async function enforceAutoMod(message: Message, settings: ServerSettings)
 			await Promise.all([
 				blockMessage(message, 'that word or phrase is not allowed here!'),
 				logAutoMod(message, rule, 'Blocked Word'),
+				applyAutoModAction(message, rule.config.action, 'Automod: blocked word rule triggered.'),
 			]);
 			return true;
 		}
@@ -368,6 +397,7 @@ export async function enforceAutoMod(message: Message, settings: ServerSettings)
 			await Promise.all([
 				blockMessage(message, 'links are not allowed here!'),
 				logAutoMod(message, rule, 'Blocked Link'),
+				applyAutoModAction(message, rule.config.action, 'Automod: blocked link rule triggered.'),
 			]);
 			return true;
 		}
