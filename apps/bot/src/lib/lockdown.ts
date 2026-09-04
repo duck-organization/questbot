@@ -3,16 +3,104 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { prisma } from '@questbot/database';
-import { EmbedBuilder, type Guild, PermissionFlagsBits } from 'discord.js';
+import {
+	EmbedBuilder,
+	type Guild,
+	type GuildTextBasedChannel,
+	PermissionFlagsBits,
+	type ThreadChannel,
+} from 'discord.js';
 import { logger } from '#lib/logger.js';
 import { getSettings } from '#lib/settings.js';
 
 export type LockdownResult = { affected: number; skipped: number };
 
+type LockableChannel = Exclude<GuildTextBasedChannel, ThreadChannel>;
+
 export async function isServerLocked(guildId: string): Promise<boolean> {
 	const server = await prisma.server.findUnique({ where: { id: guildId }, select: { locked: true } });
 
 	return server?.locked ?? false;
+}
+
+export async function isChannelLocked(channelId: string): Promise<boolean> {
+	const channel = await prisma.channel.findUnique({ where: { id: channelId }, select: { locked: true } });
+
+	return channel?.locked ?? false;
+}
+
+// checked so lock and lockdown dont mess eachother up
+export async function isChannelLockedDown(channelId: string): Promise<boolean> {
+	const channel = await prisma.channel.findUnique({ where: { id: channelId }, select: { lockedDown: true } });
+
+	return channel?.lockedDown ?? false;
+}
+
+export async function lockChannel(channel: LockableChannel, reason: string): Promise<boolean> {
+	const guild = channel.guild;
+	const me = guild.members.me;
+	if (!me) return false;
+
+	if (!channel.isSendable() || !channel.permissionsFor(me).has(PermissionFlagsBits.ManageRoles)) return false;
+
+	try {
+		await channel.permissionOverwrites.edit(
+			guild.roles.everyone,
+			{ SendMessages: false, SendMessagesInThreads: false },
+			{ reason },
+		);
+	} catch (error) {
+		logger.error(error);
+		return false;
+	}
+
+	const notice = new EmbedBuilder()
+		.setTitle('Channel Locked')
+		.setColor(0xff6962)
+		.setDescription('This channel has been locked by server administrators.');
+
+	const message = await channel.send({ embeds: [notice] }).catch((err) => {
+		logger.error(err);
+		return null;
+	});
+
+	await prisma.server.upsert({
+		where: { id: guild.id },
+		create: { id: guild.id, name: guild.name },
+		update: { name: guild.name },
+	});
+
+	await prisma.channel.upsert({
+		where: { id: channel.id },
+		create: { id: channel.id, guildId: guild.id, locked: true, lockdownMessageId: message?.id ?? null },
+		update: { locked: true, lockdownMessageId: message?.id ?? null },
+	});
+
+	return true;
+}
+
+export async function unlockChannel(channel: LockableChannel, reason: string): Promise<boolean> {
+	const row = await prisma.channel.findUnique({ where: { id: channel.id } });
+
+	try {
+		await channel.permissionOverwrites.edit(
+			channel.guild.roles.everyone,
+			{ SendMessages: null, SendMessagesInThreads: null },
+			{ reason },
+		);
+	} catch (error) {
+		logger.error(error);
+		return false;
+	}
+
+	if (row?.lockdownMessageId) await channel.messages.delete(row.lockdownMessageId).catch(() => {});
+
+	await prisma.channel.update({
+		where: { id: channel.id },
+		data: { locked: false, lockdownMessageId: null },
+	});
+
+	return true;
 }
 
 export async function lockdownServer(guild: Guild, reason: string): Promise<LockdownResult> {
