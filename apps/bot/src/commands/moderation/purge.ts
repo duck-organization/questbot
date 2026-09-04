@@ -4,6 +4,7 @@
 
 import { Command } from '@sapphire/framework';
 import { EmbedBuilder, MessageFlags, PermissionsBitField } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { logEmbed } from '#lib/logging.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -148,7 +149,7 @@ export class PurgeCommand extends Command {
 				embeds: [successEmbed(`${emojis.rightArrow1} Successfully purged ${deletedCount} messages.`)],
 			});
 		} catch (err) {
-			console.error(err);
+			logger.error(err);
 			await interaction.editReply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} An error occurred while trying to purge messages.`)],
 			});

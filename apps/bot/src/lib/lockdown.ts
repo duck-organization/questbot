@@ -4,6 +4,7 @@
 
 import { prisma } from '@questbot/database';
 import { EmbedBuilder, type Guild, PermissionFlagsBits } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { getSettings } from '#lib/settings.js';
 
 export type LockdownResult = { affected: number; skipped: number };
@@ -59,13 +60,13 @@ export async function lockdownServer(guild: Guild, reason: string): Promise<Lock
 				{ reason },
 			);
 		} catch (error) {
-			console.error(error);
+			logger.error(error);
 			skipped++;
 			continue;
 		}
 
 		const message = await channel.send({ embeds: [notice] }).catch((err) => {
-			console.error(err);
+			logger.error(err);
 			return null;
 		});
 
@@ -109,7 +110,7 @@ export async function unLockdown(guild: Guild, reason: string): Promise<Lockdown
 
 				affected++;
 			} catch (error) {
-				console.error(error);
+				logger.error(error);
 				skipped++;
 			}
 		}

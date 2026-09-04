@@ -12,6 +12,7 @@ import type {
 	MessageMentionOptions,
 	Snowflake,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 
 export async function awaitMessageComponentSafe(
 	message: Message,
@@ -23,7 +24,7 @@ export async function awaitMessageComponentSafe(
 			time: options.time ?? 60_000,
 		});
 		collector.on('error', (err: unknown) => {
-			console.debug('[awaitMessageComponentSafe] collector error', err);
+			logger.debug('[awaitMessageComponentSafe] collector error', err);
 			resolve(null);
 		});
 
@@ -48,7 +49,7 @@ export async function runConfirmedAction(
 	interaction: Command.ChatInputCommandInteraction,
 	action: () => Promise<void>,
 	reply: { success: EmbedBuilder; error: EmbedBuilder; allowedMentions: MessageMentionOptions },
-	onError: (err: unknown) => void = console.error,
+	onError: (err: unknown) => void = logger.error,
 ): Promise<void> {
 	await confirmation.deferUpdate();
 
@@ -59,7 +60,7 @@ export async function runConfirmedAction(
 		onError(err);
 		await interaction
 			.editReply({ embeds: [reply.error], allowedMentions: reply.allowedMentions, components: [] })
-			.catch((editErr: unknown) => console.error(editErr));
+			.catch((editErr: unknown) => logger.error(editErr));
 	}
 }
 

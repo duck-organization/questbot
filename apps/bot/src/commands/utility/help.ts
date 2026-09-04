@@ -11,6 +11,7 @@ import {
 	type MessageComponentInteraction,
 	MessageFlags,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { emojis } from '#utils/emoji.js';
 
 const CMDS_PAGE = 5; // amount of cmds displayed per page
@@ -93,7 +94,7 @@ export class HelpCommand extends Command {
 			try {
 				await i.update(buildHelpPage(lines, page));
 			} catch (error) {
-				console.debug('failed to update help page', error); //* really we should never hit this but if we do, the console can enjoy it
+				logger.debug('failed to update help page', error); //* really we should never hit this but if we do, the console can enjoy it
 			}
 		});
 
@@ -101,7 +102,7 @@ export class HelpCommand extends Command {
 			try {
 				await interaction.editReply({ components: [] });
 			} catch (error) {
-				console.debug('failed to clear help components', error); // same goes for this, see above ^
+				logger.debug('failed to clear help components', error); // same goes for this, see above ^
 			}
 		});
 	}

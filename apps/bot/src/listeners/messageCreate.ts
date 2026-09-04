@@ -8,6 +8,7 @@ import { containsBlockedWord, enforceAutoMod } from '#lib/automod.js';
 import { autoPublish } from '#lib/autoPublisher.js';
 import { isHaiku } from '#lib/haiku.js';
 import { enforceHoneypot } from '#lib/honeypot.js';
+import { logger } from '#lib/logger.js';
 import { getSettings } from '#lib/settings.js';
 
 export class MessageCreateListener extends Listener<typeof Events.MessageCreate> {
@@ -29,7 +30,7 @@ export class MessageCreateListener extends Listener<typeof Events.MessageCreate>
 		if (await enforceHoneypot(message, settings)) return;
 
 		if (settings.haikuEnabled && isHaiku(message.content)) {
-			await message.reply("That's a haiku!").catch((err) => console.error(err));
+			await message.reply("That's a haiku!").catch((err) => logger.error(err));
 		}
 
 		if (await enforceAutoMod(message, settings)) return;
@@ -53,7 +54,7 @@ export class MessageCreateListener extends Listener<typeof Events.MessageCreate>
 		if (moderatorIds.includes(message.author.id)) {
 			if (content.includes('<@1494686224508522579>')) {
 				// acts as a way to check if someone is a bot moderator
-				await message.reply('Why hello there!').catch((err) => console.error(err));
+				await message.reply('Why hello there!').catch((err) => logger.error(err));
 			}
 		}
 	}

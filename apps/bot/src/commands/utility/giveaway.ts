@@ -26,6 +26,7 @@ import {
 	getGiveawayByMessageId,
 	setGiveawayMessageId,
 } from '#lib/giveaways.js';
+import { logger } from '#lib/logger.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 import { getChannel } from '#utils/getChannel.js';
@@ -179,8 +180,8 @@ export class GiveawayCommand extends Command {
 				components: buildGiveawayComponents(giveaway),
 			});
 		} catch (err) {
-			console.error(err);
-			await deleteGiveaway(giveaway.id).catch((cleanupErr) => console.error(cleanupErr));
+			logger.error(err);
+			await deleteGiveaway(giveaway.id).catch((cleanupErr) => logger.error(cleanupErr));
 			await interaction.reply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} Failed to post the giveaway. Please try again.`)],
 				flags: MessageFlags.Ephemeral,
@@ -191,9 +192,9 @@ export class GiveawayCommand extends Command {
 		try {
 			await setGiveawayMessageId(giveaway.id, message.id);
 		} catch (err) {
-			console.error(err);
-			await deleteGiveaway(giveaway.id).catch((cleanupErr) => console.error(cleanupErr));
-			await message.delete().catch((cleanupErr) => console.error(cleanupErr));
+			logger.error(err);
+			await deleteGiveaway(giveaway.id).catch((cleanupErr) => logger.error(cleanupErr));
+			await message.delete().catch((cleanupErr) => logger.error(cleanupErr));
 			await interaction.reply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} Failed to post the giveaway. Please try again.`)],
 				flags: MessageFlags.Ephemeral,

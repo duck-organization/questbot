@@ -13,6 +13,7 @@ import {
 	type SlashCommandSubcommandBuilder,
 } from 'discord.js';
 import { containsBlockedWord } from '#lib/automod.js';
+import { logger } from '#lib/logger.js';
 import { logEmbed, truncate } from '#lib/logging.js';
 import { getSticky, removeSticky, repostSticky, setSticky } from '#lib/sticky.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
@@ -132,7 +133,7 @@ export class StickyCommand extends Command {
 				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			console.error(error);
+			logger.error(error);
 			await interaction.reply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} Failed to set the sticky message for this channel.`)],
 				flags: MessageFlags.Ephemeral,
@@ -174,7 +175,7 @@ export class StickyCommand extends Command {
 				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			console.error(error);
+			logger.error(error);
 			await interaction.reply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} Failed to remove the sticky message from this channel.`)],
 				flags: MessageFlags.Ephemeral,

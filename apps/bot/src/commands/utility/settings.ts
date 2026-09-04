@@ -21,6 +21,7 @@ import {
 	TextInputStyle,
 } from 'discord.js';
 import { createHoneypot, deleteHoneypot } from '#lib/honeypot.js';
+import { logger } from '#lib/logger.js';
 import { logSettingsChange } from '#lib/logging.js';
 import { getSettings, type ServerSettings, updateSettings } from '#lib/settings.js';
 import { errorEmbed, infoEmbed } from '#utils/embeds.js';
@@ -659,7 +660,7 @@ export class SettingsCommand extends Command {
 					}
 
 					const channel = await createHoneypot(guild).catch((err) => {
-						console.error(err);
+						logger.error(err);
 						return null;
 					});
 
@@ -695,7 +696,7 @@ export class SettingsCommand extends Command {
 				});
 			});
 		} catch (err) {
-			console.error(err);
+			logger.error(err);
 			await safeEditReply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} No response within a minute or errored.`)],
 				components: [],

@@ -6,6 +6,7 @@ import type { Client } from 'discord.js';
 import { getChannel } from '#utils/getChannel.js';
 import { startShardedPoller } from '#utils/sharding.js';
 import { buildGiveawayEmbed, type FinishGiveawayResult, finishGiveaway, getDueGiveaways } from './giveaways.js';
+import { logger } from './logger.js';
 
 export function giveawayScheduler(client: Client) {
 	startShardedPoller({
@@ -37,14 +38,14 @@ export async function endGiveaway(client: Client, giveawayId: string): Promise<F
 					allowedMentions: { users: ended.winnerIds },
 					...(ended.messageId ? { reply: { messageReference: ended.messageId } } : {}),
 				})
-				.catch((err) => console.error(err));
+				.catch((err) => logger.error(err));
 		} else {
 			await channel
 				.send({
 					content: `The giveaway for **${ended.prize}** ended with no entries.`,
 					allowedMentions: { parse: [] },
 				})
-				.catch((err) => console.error(err));
+				.catch((err) => logger.error(err));
 		}
 	}
 

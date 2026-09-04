@@ -6,6 +6,7 @@ import { Listener } from '@sapphire/framework';
 import { ActivityType, type Client, Events } from 'discord.js';
 import { purgeExpiredBans } from '#lib/bans.js';
 import { giveawayScheduler } from '#lib/giveawayEvent.js';
+import { logger } from '#lib/logger.js';
 import { enforceMute, getActiveMutes } from '#lib/mutes.js';
 import { reminderScheduler } from '#lib/reminderEvent.js';
 import { purgeExpiredWarns } from '#lib/warns.js';
@@ -22,7 +23,7 @@ export class ReadyListener extends Listener<typeof Events.ClientReady> {
 	}
 
 	public async run(client: Client<true>) {
-		console.log(`Ready! Logged in as ${client.user.tag}`);
+		logger.log(`Ready! Logged in as ${client.user.tag}`);
 		const statuses = (process.env.STATUS ?? '')
 			.split(',')
 			.map((status) => status.trim())
@@ -54,23 +55,23 @@ export class ReadyListener extends Listener<typeof Events.ClientReady> {
 			const mutes = await getActiveMutes(getShardInfo(client));
 			for (const mute of mutes) {
 				const guild = client.guilds.cache.get(mute.guildId);
-				if (guild) await enforceMute(guild, mute.userId).catch((err) => console.error(err));
+				if (guild) await enforceMute(guild, mute.userId).catch((err) => logger.error(err));
 			}
 		};
 
 		const purge = () => {
-			if (isPrimaryShard(client)) purgeExpiredWarns().catch((err) => console.error(err));
-			purgeExpiredBans(client).catch((err) => console.error(err));
+			if (isPrimaryShard(client)) purgeExpiredWarns().catch((err) => logger.error(err));
+			purgeExpiredBans(client).catch((err) => logger.error(err));
 		};
 
-		await enforceMutes().catch((err) => console.error(err));
+		await enforceMutes().catch((err) => logger.error(err));
 		purge();
 
 		setInterval(purge, 60 * 1000); // 1 min
 
 		setInterval(
 			() => {
-				enforceMutes().catch((err) => console.error(err));
+				enforceMutes().catch((err) => logger.error(err));
 			},
 			30 * 60 * 1000,
 		); // 30 min

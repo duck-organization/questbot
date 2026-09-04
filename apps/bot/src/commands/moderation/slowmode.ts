@@ -5,6 +5,7 @@
 import { Command } from '@sapphire/framework';
 import { MessageFlags, PermissionFlagsBits, PermissionsBitField, type SlashCommandStringOption } from 'discord.js';
 import ms, { type StringValue } from 'ms';
+import { logger } from '#lib/logger.js';
 import { errorEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -97,7 +98,7 @@ export class SlowmodeCommand extends Command {
 				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			console.error(error);
+			logger.error(error);
 			await interaction.reply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} Failed to update the slowmode for this channel.`)],
 				flags: MessageFlags.Ephemeral,

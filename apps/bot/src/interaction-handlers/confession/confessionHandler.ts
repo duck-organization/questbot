@@ -17,6 +17,7 @@ import {
 	TextInputStyle,
 } from 'discord.js';
 import { getConfessionContext, getModeratorIds, removeConfessionContext } from '#lib/confessions.js';
+import { logger } from '#lib/logger.js';
 import { emojis } from '#utils/emoji.js';
 
 interface ParsedConfessionButton {
@@ -163,7 +164,7 @@ export class ConfessionButtonHandler extends InteractionHandler {
 		const channel = await fetchConfessionChannel(interaction, context.channelId);
 
 		if (!channel) {
-			console.error('Confession channel fetch failed', { channelId: context.channelId, context });
+			logger.error('Confession channel fetch failed', { channelId: context.channelId, context });
 			await modalSubmit.editReply({
 				content: `${emojis.rightArrow2} The confession channel (<#${context.channelId}>) is no longer available.`,
 			});
@@ -259,7 +260,7 @@ export class ConfessionButtonHandler extends InteractionHandler {
 		try {
 			storedContext = await getConfessionContext(parsed.messageId);
 		} catch (error) {
-			console.error('Failed to fetch confession context', { messageId: parsed.messageId, error });
+			logger.error('Failed to fetch confession context', { messageId: parsed.messageId, error });
 		}
 
 		const context =
@@ -278,7 +279,7 @@ export class ConfessionButtonHandler extends InteractionHandler {
 		const channel = await fetchConfessionChannel(interaction, context.channelId, context.guildId);
 
 		if (!channel) {
-			console.error('Confession channel fetch failed (delete flow)', {
+			logger.error('Confession channel fetch failed (delete flow)', {
 				channelId: context.channelId,
 				guildId: context.guildId,
 				context,
@@ -326,7 +327,7 @@ export class ConfessionButtonHandler extends InteractionHandler {
 				}
 			}
 		} catch (error) {
-			console.error('Failed to rename confession thread', { threadId: context.threadId, error });
+			logger.error('Failed to rename confession thread', { threadId: context.threadId, error });
 		}
 
 		await removeConfessionContext(context.messageId);

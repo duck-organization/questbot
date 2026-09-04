@@ -4,6 +4,7 @@
 
 import { type Prisma, prisma } from '@questbot/database';
 import type { GuildTextBasedChannel } from 'discord.js';
+import { logger } from '#lib/logger.js';
 
 export type Sticky = Prisma.ChannelModel;
 
@@ -87,7 +88,7 @@ export async function repostSticky(channel: GuildTextBasedChannel, sticky: Stick
 
 			void getSticky(sticky.guildId, channel.id)
 				.then((fresh) => (fresh ? repostSticky(channel, fresh) : undefined))
-				.catch(() => console.error(`Failed to repost sticky in ${sticky.guildId}#${channel.id}`));
+				.catch(() => logger.error(`Failed to repost sticky in ${sticky.guildId}#${channel.id}`));
 		}, 5_000 - since);
 
 		return;
@@ -116,7 +117,7 @@ export async function repostSticky(channel: GuildTextBasedChannel, sticky: Stick
 			});
 		}
 	} catch {
-		console.error(`Failed to send sticky in ${sticky.guildId}#${channel.id}`);
+		logger.error(`Failed to send sticky in ${sticky.guildId}#${channel.id}`);
 	} finally {
 		lastRepostAt.set(channel.id, Date.now());
 	}

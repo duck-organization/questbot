@@ -10,6 +10,7 @@ import {
 	type SlashCommandUserOption,
 } from 'discord.js';
 import { addConfessionBlacklist, isConfessionBlacklisted, removeConfessionBlacklist } from '#lib/confessions.js';
+import { logger } from '#lib/logger.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -72,7 +73,7 @@ export class ConfessionBlacklistCommand extends Command {
 					flags: MessageFlags.Ephemeral,
 				});
 			} catch (err) {
-				console.error(err);
+				logger.error(err);
 				await interaction.reply({
 					embeds: [errorEmbed(`${emojis.rightArrow2} Failed to blacklist that user.`)],
 					flags: MessageFlags.Ephemeral,

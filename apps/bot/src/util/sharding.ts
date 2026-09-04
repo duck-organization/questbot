@@ -4,6 +4,7 @@
 
 import { Prisma } from '@questbot/database';
 import type { Client } from 'discord.js';
+import { logger } from '#lib/logger.js';
 
 const INTERVAL = 30_000; // this can be overridden by passing intervalMs into the function
 
@@ -53,9 +54,9 @@ export function startShardedPoller<T>({
 		try {
 			const due = await getDue(getShardInfo(client));
 
-			await Promise.allSettled(due.map((item) => handle(item).catch((err) => console.error(err))));
+			await Promise.allSettled(due.map((item) => handle(item).catch((err) => logger.error(err))));
 		} catch (err) {
-			console.error(err);
+			logger.error(err);
 		} finally {
 			isTickRunning = false;
 		}

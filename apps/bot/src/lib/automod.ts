@@ -7,6 +7,7 @@ import { EmbedBuilder, type Message, PermissionFlagsBits } from 'discord.js';
 import { applyBan } from './bans.js';
 import { BurstTracker } from './burstTracker.js';
 import { LIMITS_ENABLED, LimitError } from './limits.js';
+import { logger } from './logger.js';
 import { logEmbed } from './logging.js';
 import type { ServerSettings } from './settings.js';
 
@@ -100,7 +101,7 @@ function validateRule(row: {
 	createdAt: Date;
 }): AutoModRuleRow | null {
 	if (!isValidRuleConfig(row)) {
-		console.error(`Skipped automod rule ${row.id} in guild ${row.guildId}, config doesn't match type ${row.type}.`);
+		logger.error(`Skipped automod rule ${row.id} in guild ${row.guildId}, config doesn't match type ${row.type}.`);
 		return null;
 	}
 
@@ -292,9 +293,9 @@ async function blockMessage(message: Message, reason: string): Promise<void> {
 	const channel = message.channel;
 
 	await Promise.all([
-		message.delete().catch((err) => console.error(err)),
+		message.delete().catch((err) => logger.error(err)),
 		channel.isTextBased() && channel.isSendable()
-			? channel.send(`<@${message.author.id}>, ${reason}`).catch((err) => console.error(err))
+			? channel.send(`<@${message.author.id}>, ${reason}`).catch((err) => logger.error(err))
 			: undefined,
 	]);
 }
@@ -303,7 +304,7 @@ async function applyAutoModAction(message: Message, action: AutoModAction, reaso
 	if (!message.inGuild()) return;
 
 	if (action === 'kickDelete' && message.member?.kickable) {
-		await message.member.kick(reason).catch((err) => console.error(err));
+		await message.member.kick(reason).catch((err) => logger.error(err));
 	} else if (action === 'banDelete') {
 		await applyBan(message.guild, message.author.id, reason);
 	}

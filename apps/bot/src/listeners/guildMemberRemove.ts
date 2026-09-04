@@ -5,6 +5,7 @@
 import { Listener } from '@sapphire/framework';
 import { AuditLogEvent, Colors, EmbedBuilder, Events, type GuildMember } from 'discord.js';
 import { removeAfk } from '#lib/afk.js';
+import { logger } from '#lib/logger.js';
 import { getRecentAuditLogEntry, logEmbed } from '#lib/logging.js';
 import { clearReminders } from '#lib/reminders.js';
 
@@ -19,8 +20,8 @@ export class GuildMemberRemoveListener extends Listener<typeof Events.GuildMembe
 	public async run(member: GuildMember) {
 		// cleanup old data when a user leaves
 		await Promise.all([
-			removeAfk(member.guild.id, member.id).catch((err) => console.error(err)),
-			clearReminders(member.guild.id, member.id).catch((err) => console.error(err)),
+			removeAfk(member.guild.id, member.id).catch((err) => logger.error(err)),
+			clearReminders(member.guild.id, member.id).catch((err) => logger.error(err)),
 		]);
 
 		const banEntry = await getRecentAuditLogEntry(member.guild, AuditLogEvent.MemberBanAdd, member.id);

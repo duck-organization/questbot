@@ -28,7 +28,7 @@
 						"conventions": [
 							{
 								"selector": { "kind": "const", "scope": "global" },
-								"match": "(client|manager|shardFile|shardCountEnv|emojis|ownerDmCooldown|settingsCache|rulesCache|spamTracking|stickyCache|lastRepostAt|pendingRepost|crosspostWindows|recentMessages|prisma|globalForPrisma|auth|authClient|links|[A-Z][a-zA-Z0-9]*(?:_[A-Z0-9]+)*)"
+								"match": "(client|manager|shardFile|shardCountEnv|emojis|ownerDmCooldown|settingsCache|rulesCache|spamTracking|stickyCache|lastRepostAt|pendingRepost|crosspostWindows|recentMessages|prisma|globalForPrisma|auth|authClient|links|logger|[A-Z][a-zA-Z0-9]*(?:_[A-Z0-9]+)*)"
 							},
 							{
 								"selector": { "kind": "any" },

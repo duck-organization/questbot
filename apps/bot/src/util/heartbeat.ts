@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type { Client } from 'discord.js';
+import { logger } from '#lib/logger.js';
 
 export function heartbeat(client: Client) {
 	const pushURLs =
@@ -22,10 +23,10 @@ export function heartbeat(client: Client) {
 
 			const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
 			if (!response.ok) {
-				console.error(`[heartbeat] Shard ${shardId} push failed: ${response.status}`);
+				logger.error(`[heartbeat] Shard ${shardId} push failed: ${response.status}`);
 			}
 		} catch (err) {
-			console.error(`[heartbeat] Shard ${shardId} push error:`, err);
+			logger.error(`[heartbeat] Shard ${shardId} push error:`, err);
 		}
 	};
 

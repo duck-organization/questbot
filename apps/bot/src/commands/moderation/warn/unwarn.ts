@@ -13,6 +13,7 @@ import {
 	PermissionsBitField,
 	type SlashCommandStringOption,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { getWarn, removeWarn } from '#lib/warns.js';
 import { runConfirmedAction } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
@@ -150,7 +151,7 @@ export class UnwarnCommand extends Command {
 						error: errorEmbed(`${emojis.rightArrow2} Failed to remove warn \`${warn.id}\` from <@${warn.userId}>.`),
 						allowedMentions: { parse: [], users: [warn.userId] },
 					},
-					(err) => console.error(`Failed to remove warn ${warn.id}:`, err),
+					(err) => logger.error(`Failed to remove warn ${warn.id}:`, err),
 				);
 			} else if (confirmation.customId === 'cancel') {
 				await confirmation.update({

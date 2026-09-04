@@ -14,6 +14,7 @@ import {
 	PermissionsBitField,
 } from 'discord.js';
 import ms, { type StringValue } from 'ms';
+import { logger } from '#lib/logger.js';
 import { logEmbed, truncate } from '#lib/logging.js';
 import { createWarn } from '#lib/warns.js';
 import { runConfirmedAction } from '#utils/collectors.js';
@@ -193,7 +194,7 @@ export class WarnCommand extends Command {
 				await confirmation.update({ embeds: [infoEmbed(`${emojis.rightArrow2} Cancelled.`)], components: [] });
 			}
 		} catch (err) {
-			console.error(err);
+			logger.error(err);
 			await interaction.editReply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} No response within a minute or errored.`)],
 				components: [],

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { DiscordAPIError, type GuildMember, RESTJSONErrorCodes } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { getSettings } from '#lib/settings.js';
 import { emojis } from '#utils/emoji.js';
 
@@ -23,7 +24,7 @@ export async function sendWelcome(member: GuildMember): Promise<void> {
 			await notifyOwner(member, channel.id);
 			return;
 		}
-		console.error(`[welcomeModule] Failed to send in ${member.guild.id}#${channel.id}:`, err);
+		logger.error(`[welcomeModule] Failed to send in ${member.guild.id}#${channel.id}:`, err);
 	}
 }
 
@@ -39,6 +40,6 @@ async function notifyOwner(member: GuildMember, channelId: string): Promise<void
 			`${emojis.rightArrow2} I couldn't send a welcome message in **${guild.name}** because I'm missing permissions in <#${channelId}>. Make sure I have permission to send messages there!`,
 		);
 	} catch (err) {
-		console.warn(`[welcomeModule] Couldn't DM owner of ${guild.id}:`, err);
+		logger.warn(`[welcomeModule] Couldn't DM owner of ${guild.id}:`, err);
 	}
 }

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { type Message, MessageFlags } from 'discord.js';
+import { logger } from '#lib/logger.js';
 
 const crosspostWindows = new Map<string, { count: number; resetAt: number }>();
 
@@ -22,6 +23,6 @@ export async function autoPublish(message: Message): Promise<void> {
 	try {
 		await message.crosspost();
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 	}
 }

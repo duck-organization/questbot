@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { type AuditLogEvent, EmbedBuilder, type Guild, type User } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { getSettings, SETTING_LABELS, type ServerSettings } from '#lib/settings.js';
 
 // so we don't return the raw value (looks ugly)
@@ -19,12 +20,12 @@ async function sendLog(guild: Guild, channelId: string, embed: EmbedBuilder) {
 	const channel = await guild.channels.fetch(channelId).catch(() => null);
 	if (!channel?.isTextBased() || !channel.isSendable()) return;
 
-	await channel.send({ embeds: [embed] }).catch((err) => console.error(err));
+	await channel.send({ embeds: [embed] }).catch((err) => logger.error(err));
 }
 
 export async function logEmbed(guild: Guild, embed: EmbedBuilder) {
 	const settings = await getSettings(guild.id).catch((err) => {
-		console.error(err);
+		logger.error(err);
 		return null;
 	});
 
@@ -66,7 +67,7 @@ export async function isLoggingChannel(guild: Guild, channelId: string | null | 
 	if (!channelId) return false;
 
 	const settings = await getSettings(guild.id).catch((err) => {
-		console.error(err);
+		logger.error(err);
 		return null;
 	});
 
@@ -75,7 +76,7 @@ export async function isLoggingChannel(guild: Guild, channelId: string | null | 
 
 export async function getRecentAuditLogEntry(guild: Guild, type: AuditLogEvent, targetId: string) {
 	const auditLogs = await guild.fetchAuditLogs({ type, limit: 5 }).catch((err) => {
-		if (err?.code !== 10004) console.error(err);
+		if (err?.code !== 10004) logger.error(err);
 		return null;
 	});
 

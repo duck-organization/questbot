@@ -12,6 +12,7 @@ import {
 	type Message,
 	PermissionFlagsBits,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { logEmbed } from '#lib/logging.js';
 import type { ServerSettings } from '#lib/settings.js';
 
@@ -47,7 +48,7 @@ export async function createHoneypot(guild: Guild) {
 export async function deleteHoneypot(guild: Guild, channelId: string) {
 	const channel = guild.channels.cache.get(channelId) ?? (await guild.channels.fetch(channelId).catch(() => null));
 
-	await channel?.delete().catch((err) => console.error(err));
+	await channel?.delete().catch((err) => logger.error(err));
 }
 
 export async function enforceHoneypot(message: Message, settings: ServerSettings): Promise<boolean> {
@@ -63,7 +64,7 @@ export async function enforceHoneypot(message: Message, settings: ServerSettings
 	const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
 	const theirs = recent?.filter((entry) => entry.author.id === message.author.id) ?? [message];
 
-	await channel.bulkDelete(theirs, true).catch((err) => console.error(err));
+	await channel.bulkDelete(theirs, true).catch((err) => logger.error(err));
 
 	const REASON = `Honey Pot: ${message.author.tag} sent a message in #${channel.name}.`;
 	const kicked = message.member?.kickable
@@ -71,7 +72,7 @@ export async function enforceHoneypot(message: Message, settings: ServerSettings
 				.kick(REASON)
 				.then(() => true)
 				.catch((err) => {
-					console.error(err);
+					logger.error(err);
 					return false;
 				})
 		: false;

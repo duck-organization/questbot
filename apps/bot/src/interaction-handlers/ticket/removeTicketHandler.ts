@@ -16,6 +16,7 @@ import {
 	TextInputBuilder,
 	TextInputStyle,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { getSettings } from '#lib/settings.js';
 import { getTicketId, removeTicket } from '#lib/tickets.js';
 import { emojis } from '#utils/emoji.js';
@@ -209,7 +210,7 @@ export class ButtonHandler extends InteractionHandler {
 								files: [attachment],
 							});
 						} catch (transcriptErr) {
-							console.error('Failed to send ticket transcript:', transcriptErr);
+							logger.error('Failed to send ticket transcript:', transcriptErr);
 						}
 					}
 				}
@@ -219,7 +220,7 @@ export class ButtonHandler extends InteractionHandler {
 
 			await channel.delete(`Ticket closed by ${interaction.user.tag}. Reason: ${reason}`);
 		} catch (err) {
-			console.log(err);
+			logger.log(err);
 		}
 	}
 }

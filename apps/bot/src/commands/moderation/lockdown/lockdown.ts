@@ -5,6 +5,7 @@
 import { BucketScope, Command } from '@sapphire/framework';
 import { EmbedBuilder, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { isServerLocked, lockdownServer } from '#lib/lockdown.js';
+import { logger } from '#lib/logger.js';
 import { logEmbed } from '#lib/logging.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -80,7 +81,7 @@ export class LockdownCommand extends Command {
 				],
 			});
 		} catch (error) {
-			console.error(error);
+			logger.error(error);
 			await interaction.editReply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} Failed to lock down this server.`)],
 			});

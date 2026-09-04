@@ -5,6 +5,7 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type GuildMember, PermissionFlagsBits } from 'discord.js';
 import { getAutoRoles } from '#lib/autorole.js';
+import { logger } from '#lib/logger.js';
 import { enforceMute } from '#lib/mutes.js';
 import { sendWelcome } from '#lib/welcomeModule.js';
 
@@ -20,13 +21,13 @@ export class GuildMemberAddListener extends Listener<typeof Events.GuildMemberAd
 		const botMember = member.guild.members.me;
 
 		if (!botMember?.permissions.has(PermissionFlagsBits.ManageRoles)) {
-			await enforceMute(member.guild, member.id).catch((err) => console.error(err));
-			await sendWelcome(member).catch((err) => console.error(err));
+			await enforceMute(member.guild, member.id).catch((err) => logger.error(err));
+			await sendWelcome(member).catch((err) => logger.error(err));
 			return;
 		}
 
 		const autoRoles = await getAutoRoles(member.guild.id).catch((err) => {
-			console.error(err);
+			logger.error(err);
 			return [];
 		});
 
@@ -37,10 +38,10 @@ export class GuildMemberAddListener extends Listener<typeof Events.GuildMemberAd
 			.map((role) => role.id);
 
 		if (rolesToAdd.length > 0) {
-			await member.roles.add(rolesToAdd).catch((err) => console.error(err));
+			await member.roles.add(rolesToAdd).catch((err) => logger.error(err));
 		}
 
-		await enforceMute(member.guild, member.id).catch((err) => console.error(err));
-		await sendWelcome(member).catch((err) => console.error(err));
+		await enforceMute(member.guild, member.id).catch((err) => logger.error(err));
+		await sendWelcome(member).catch((err) => logger.error(err));
 	}
 }

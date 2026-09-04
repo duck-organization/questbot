@@ -12,6 +12,7 @@ import {
 import ms, { type StringValue } from 'ms';
 import { containsBlockedWord } from '#lib/automod.js';
 import { LimitError } from '#lib/limits.js';
+import { logger } from '#lib/logger.js';
 import { createReminder, getReminder, removeReminder } from '#lib/reminders.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -105,7 +106,7 @@ export class ReminderCommand extends Command {
 				});
 				return;
 			} catch (err) {
-				console.error(err);
+				logger.error(err);
 				if (err instanceof LimitError) {
 					await interaction.reply({
 						embeds: [errorEmbed(`${emojis.rightArrow2} ${err.message}`)],

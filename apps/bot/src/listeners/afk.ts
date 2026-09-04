@@ -5,6 +5,7 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Message } from 'discord.js';
 import { consumeAfk, getAfkForUsers } from '#lib/afk.js';
+import { logger } from '#lib/logger.js';
 
 export class AfkListener extends Listener<typeof Events.MessageCreate> {
 	public constructor(context: Listener.LoaderContext, options: Listener.Options) {
@@ -30,7 +31,7 @@ export class AfkListener extends Listener<typeof Events.MessageCreate> {
 				content: `Welcome back, <@${message.author.id}>! I've removed your AFK status.`,
 				allowedMentions: { parse: [], users: [message.author.id] },
 			})
-			.catch((err) => console.error(err));
+			.catch((err) => logger.error(err));
 	}
 
 	private async afkMention(message: Message<true>) {
@@ -47,6 +48,6 @@ export class AfkListener extends Listener<typeof Events.MessageCreate> {
 				content: lines.join('\n'),
 				allowedMentions: { parse: [], users: afkUsers.map((afk) => afk.userId) },
 			})
-			.catch((err) => console.error(err));
+			.catch((err) => logger.error(err));
 	}
 }

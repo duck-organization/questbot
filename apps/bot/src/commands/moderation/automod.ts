@@ -35,6 +35,7 @@ import {
 	removeAutoModRule,
 } from '#lib/automod.js';
 import { LimitError } from '#lib/limits.js';
+import { logger } from '#lib/logger.js';
 import { getSettings, updateSettings } from '#lib/settings.js';
 import { awaitMessageComponentSafe } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
@@ -419,7 +420,7 @@ export class AutoModCommand extends Command {
 			return;
 		}
 
-		console.error(err);
+		logger.error(err);
 		await this.sendResult(interaction, errorEmbed(`${emojis.rightArrow2} Failed to add that automod rule.`));
 	}
 

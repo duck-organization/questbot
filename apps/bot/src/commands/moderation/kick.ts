@@ -14,6 +14,7 @@ import {
 	type SlashCommandStringOption,
 	type SlashCommandUserOption,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { runConfirmedAction } from '#utils/collectors.js';
 import { errorEmbed, infoEmbed, successEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
@@ -157,7 +158,7 @@ export class KickCommand extends Command {
 				});
 			}
 		} catch (err) {
-			console.error(err);
+			logger.error(err);
 			await interaction.editReply({
 				embeds: [errorEmbed(`${emojis.rightArrow2} No response within a minute or errored.`)],
 				components: [],

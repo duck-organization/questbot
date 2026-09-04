@@ -16,6 +16,7 @@ import {
 	RESTJSONErrorCodes,
 	type User,
 } from 'discord.js';
+import { logger } from '#lib/logger.js';
 import { truncate } from '#lib/logging.js';
 import { getSettings } from '#lib/settings.js';
 import { Colors } from '#utils/embeds.js';
@@ -249,5 +250,5 @@ export async function syncStarboard(reaction: MessageReaction, user: User | Part
 	}
 
 	// react with the emoji on the post
-	await sent.react(emoji).catch((err) => console.error(err));
+	await sent.react(emoji).catch((err) => logger.error(err));
 }
