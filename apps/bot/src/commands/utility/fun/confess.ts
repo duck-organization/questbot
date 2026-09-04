@@ -127,7 +127,7 @@ export class ConfessCommand extends Command {
 		let thread: PublicThreadChannel<false>;
 
 		try {
-			const threadName = confession.replace(/\\s+/g, ' ').slice(0, 10).toLowerCase() || 'confession';
+			const threadName = confession.replace(/\s+/g, ' ').slice(0, 20).toLowerCase() || 'confession';
 			thread = await message.startThread({ name: `${threadName}` });
 		} catch (error) {
 			await message.delete().catch(() => null);
