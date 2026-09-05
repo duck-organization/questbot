@@ -15,6 +15,7 @@ import {
 	type SlashCommandUserOption,
 } from 'discord.js';
 import ms, { type StringValue } from 'ms';
+import { scheduleUnban } from '#lib/banScheduler.js';
 import { applyBan, createBan } from '#lib/bans.js';
 import { logger } from '#lib/logger.js';
 import { runConfirmedAction } from '#utils/collectors.js';
@@ -143,7 +144,14 @@ export class BanCommand extends Command {
 					confirmation,
 					interaction,
 					async () => {
-						await createBan(interaction.guild.id, interaction.guild.name, targetMember.id, expiresAt, reason);
+						const ban = await createBan(
+							interaction.guild.id,
+							interaction.guild.name,
+							targetMember.id,
+							expiresAt,
+							reason,
+						);
+						await scheduleUnban(ban);
 						await applyBan(interaction.guild, targetMember.id, reason);
 						await targetMember
 							.send(
