@@ -13,6 +13,7 @@ import {
 	PermissionsBitField,
 	type SlashCommandStringOption,
 } from 'discord.js';
+import { unscheduleUnban } from '#lib/banScheduler.js';
 import { getBan, removeBan } from '#lib/bans.js';
 import { logger } from '#lib/logger.js';
 import { runConfirmedAction } from '#utils/collectors.js';
@@ -104,6 +105,7 @@ export class UnbanCommand extends Command {
 					interaction,
 					async () => {
 						await removeBan(interaction.guild, targetMember.id);
+						if (dbBan) await unscheduleUnban(dbBan.id);
 						await targetMember
 							.send(`You have been unbanned in **${interaction.guild.name}**.\nReason: ${reason}`)
 							.catch(() => {});

@@ -2,9 +2,8 @@
 // Copyright(C) 2026 Vantern
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Prisma, prisma } from '@questbot/database';
-import { type Client, type Guild, PermissionFlagsBits } from 'discord.js';
-import { getShardInfo, shardOwns } from '#utils/sharding.js';
+import { prisma } from '@questbot/database';
+import { type Guild, PermissionFlagsBits } from 'discord.js';
 
 export async function createBan(
 	guildId: string,
@@ -67,22 +66,4 @@ export async function removeBan(guild: Guild, userId: string): Promise<boolean> 
 
 	await clearBans(guild.id, userId);
 	return true;
-}
-
-export async function purgeExpiredBans(client: Client) {
-	const expired = await prisma.$queryRaw<Prisma.BanModel[]>`
-		SELECT * FROM "Ban"
-		WHERE "expiresAt" IS NOT NULL AND "expiresAt" <= ${new Date()}
-			AND ${shardOwns(Prisma.sql`"guildId"::bigint`, getShardInfo(client))}
-		LIMIT 100
-	`;
-
-	for (const ban of expired) {
-		const guild = client.guilds.cache.get(ban.guildId);
-		if (guild) {
-			await removeBan(guild, ban.userId);
-		} else {
-			await prisma.ban.delete({ where: { id: ban.id } }).catch(() => {});
-		}
-	}
 }

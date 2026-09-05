@@ -7,5 +7,6 @@ minimumReleaseAge: 10080 # 7d
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
+  msgpackr-extract: true
   prisma: true
   sharp: true
