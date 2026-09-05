@@ -4,7 +4,9 @@
 
 import { Redis } from 'ioredis';
 
+if (!process.env.REDIS_URL) throw new Error('REDIS_URL is not set');
+
 // maxRetriesPerRequest must be null for BullMQ's blocking connections
-export const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+export const connection = new Redis(process.env.REDIS_URL, {
 	maxRetriesPerRequest: null,
 });
