@@ -14,16 +14,12 @@ import {
 } from 'discord.js';
 import { Colors, errorEmbed } from '#utils/embeds.js';
 import { emojis } from '#utils/emoji.js';
-import { ASSET_SIZE, assetMessage } from '#utils/profile.js';
+import { ASSET_SIZE, assetMessage, replyWithAsset, toUnix } from '#utils/profile.js';
 
 function addUserOption(subcommand: SlashCommandSubcommandBuilder, description: string): SlashCommandSubcommandBuilder {
 	return subcommand.addUserOption((option: SlashCommandUserOption) =>
 		option.setName('user').setDescription(description).setRequired(false),
 	);
-}
-
-function toUnix(timestamp: number): number {
-	return Math.floor(timestamp / 1000);
 }
 
 function formatRoles(member: GuildMember): string {
@@ -105,7 +101,7 @@ export class UserCommand extends Command {
 
 		const avatarUrl = (member ?? user).displayAvatarURL({ size: ASSET_SIZE });
 
-		await interaction.editReply(assetMessage(user, avatarUrl));
+		await interaction.editReply(assetMessage(user.displayName, user.id, avatarUrl));
 	}
 
 	private async sendBanner(interaction: Command.ChatInputCommandInteraction, user: User) {
@@ -120,14 +116,13 @@ export class UserCommand extends Command {
 
 		const bannerUrl = fetched.bannerURL({ size: ASSET_SIZE });
 
-		if (!bannerUrl) {
-			await interaction.editReply({
-				embeds: [errorEmbed(`${emojis.rightArrow2} **${fetched.displayName}** doesn't have a banner!`)],
-			});
-			return;
-		}
-
-		await interaction.editReply(assetMessage(fetched, bannerUrl));
+		await replyWithAsset(
+			interaction,
+			fetched.displayName,
+			fetched.id,
+			bannerUrl,
+			`**${fetched.displayName}** doesn't have a banner!`,
+		);
 	}
 
 	private async sendInfo(interaction: Command.ChatInputCommandInteraction, user: User) {

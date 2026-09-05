@@ -40,6 +40,6 @@ export class PfpCommand extends Command {
 		// todo: in the future size could become an option rather than 4096 hard coded
 		const avatarUrl = (member ?? user).displayAvatarURL({ size: ASSET_SIZE });
 
-		await interaction.editReply(assetMessage(user, avatarUrl));
+		await interaction.editReply(assetMessage(user.displayName, user.id, avatarUrl));
 	}
 }
