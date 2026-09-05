@@ -73,6 +73,7 @@ model Server {
   locked           Boolean  @default(false)
   nextTicketNumber Int      @default(1)
   settings         Json     @default("{}")
+  deletedAt        DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -89,6 +90,7 @@ model Server {
   channels     Channel[]
   starboard    Starboard[]
 
+  @@index([deletedAt])
   @@map("server")
 }
 

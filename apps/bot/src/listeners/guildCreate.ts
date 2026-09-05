@@ -4,6 +4,7 @@
 
 import { Listener } from '@sapphire/framework';
 import { AuditLogEvent, EmbedBuilder, Events, type Guild, PermissionFlagsBits } from 'discord.js';
+import { restoreServer } from '#lib/servers.js';
 
 export class GuildCreateListener extends Listener<typeof Events.GuildCreate> {
 	public constructor(context: Listener.LoaderContext, options: Listener.Options) {
@@ -11,6 +12,8 @@ export class GuildCreateListener extends Listener<typeof Events.GuildCreate> {
 	}
 
 	public async run(guild: Guild) {
+		await restoreServer(guild.id);
+
 		if (!guild.members.me?.permissions.has(PermissionFlagsBits.ViewAuditLog)) return;
 
 		const logs = await guild.fetchAuditLogs({ type: AuditLogEvent.BotAdd, limit: 5 }).catch(() => null);

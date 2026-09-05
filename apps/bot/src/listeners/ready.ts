@@ -9,6 +9,7 @@ import { giveawayScheduler } from '#lib/giveawayEvent.js';
 import { logger } from '#lib/logger.js';
 import { enforceMute, getActiveMutes } from '#lib/mutes.js';
 import { reminderScheduler } from '#lib/reminderEvent.js';
+import { purgeDeletedServers } from '#lib/servers.js';
 import { purgeExpiredWarns } from '#lib/warns.js';
 import { heartbeat } from '#utils/heartbeat.js';
 import { getShardInfo, isPrimaryShard } from '#utils/sharding.js';
@@ -60,7 +61,10 @@ export class ReadyListener extends Listener<typeof Events.ClientReady> {
 		};
 
 		const purge = () => {
-			if (isPrimaryShard(client)) purgeExpiredWarns().catch((err) => logger.error(err));
+			if (isPrimaryShard(client)) {
+				purgeExpiredWarns().catch((err) => logger.error(err));
+				purgeDeletedServers().catch((err) => logger.error(err));
+			}
 			purgeExpiredBans(client).catch((err) => logger.error(err));
 		};
 

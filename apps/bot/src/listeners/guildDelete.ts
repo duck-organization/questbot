@@ -2,10 +2,10 @@
 // Copyright(C) 2026 Vantern
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { prisma } from '@questbot/database';
 import { Listener } from '@sapphire/framework';
 import { EmbedBuilder, Events, type Guild } from 'discord.js';
 import { forgetAutoModRules } from '#lib/automod.js';
+import { softDeleteServer } from '#lib/servers.js';
 import { forgetSettings } from '#lib/settings.js';
 import { forgetStickies } from '#lib/sticky.js';
 
@@ -15,7 +15,7 @@ export class GuildDeleteListener extends Listener<typeof Events.GuildDelete> {
 	}
 
 	public async run(guild: Guild) {
-		await prisma.server.delete({ where: { id: guild.id } }).catch(() => null);
+		await softDeleteServer(guild.id);
 		forgetSettings(guild.id);
 		forgetAutoModRules(guild.id);
 		forgetStickies(guild.id);
