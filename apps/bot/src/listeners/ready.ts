@@ -8,7 +8,7 @@ import { initBanScheduler } from '#lib/banScheduler.js';
 import { giveawayScheduler } from '#lib/giveawayEvent.js';
 import { logger } from '#lib/logger.js';
 import { enforceMute, getActiveMutes } from '#lib/mutes.js';
-import { reminderScheduler } from '#lib/reminderEvent.js';
+import { initReminderScheduler } from '#lib/reminderScheduler.js';
 import { purgeDeletedServers } from '#lib/servers.js';
 import { purgeExpiredWarns } from '#lib/warns.js';
 import { heartbeat } from '#utils/heartbeat.js';
@@ -48,7 +48,7 @@ export class ReadyListener extends Listener<typeof Events.ClientReady> {
 		}
 
 		heartbeat(client);
-		reminderScheduler(client);
+		initReminderScheduler(client);
 		giveawayScheduler(client);
 		initBanScheduler(client);
 

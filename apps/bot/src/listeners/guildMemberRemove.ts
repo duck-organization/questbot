@@ -7,7 +7,8 @@ import { AuditLogEvent, Colors, EmbedBuilder, Events, type GuildMember } from 'd
 import { removeAfk } from '#lib/afk.js';
 import { logger } from '#lib/logger.js';
 import { getRecentAuditLogEntry, logEmbed } from '#lib/logging.js';
-import { clearReminders } from '#lib/reminders.js';
+import { unscheduleReminder } from '#lib/reminderScheduler.js';
+import { clearReminders, getReminders } from '#lib/reminders.js';
 
 export class GuildMemberRemoveListener extends Listener<typeof Events.GuildMemberRemove> {
 	public constructor(context: Listener.LoaderContext, options: Listener.Options) {
@@ -19,9 +20,11 @@ export class GuildMemberRemoveListener extends Listener<typeof Events.GuildMembe
 
 	public async run(member: GuildMember) {
 		// cleanup old data when a user leaves
+		const reminders = await getReminders(member.id, member.guild.id);
 		await Promise.all([
 			removeAfk(member.guild.id, member.id).catch((err) => logger.error(err)),
 			clearReminders(member.guild.id, member.id).catch((err) => logger.error(err)),
+			...reminders.map((reminder) => unscheduleReminder(reminder.id).catch((err) => logger.error(err))),
 		]);
 
 		const banEntry = await getRecentAuditLogEntry(member.guild, AuditLogEvent.MemberBanAdd, member.id);

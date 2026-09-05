@@ -2,8 +2,7 @@
 // Copyright(C) 2026 Vantern
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Prisma, prisma } from '@questbot/database';
-import { type ShardInfo, shardOwns } from '#utils/sharding.js';
+import { prisma } from '@questbot/database';
 import { LIMITS_ENABLED, LimitError } from './limits.js';
 
 export async function createReminder(
@@ -54,14 +53,4 @@ export async function clearReminders(guildId: string, userId: string) {
 
 export async function getReminder(reminderId: string) {
 	return prisma.reminder.findUnique({ where: { id: reminderId } });
-}
-
-export async function getDueReminders(shard: ShardInfo) {
-	return prisma.$queryRaw<Prisma.ReminderModel[]>`
-		SELECT * FROM "Reminder"
-		WHERE "remindAt" <= ${new Date()}
-			AND ${shardOwns(Prisma.sql`COALESCE("guildId", "userId")::bigint`, shard)}
-		ORDER BY "remindAt" ASC
-		LIMIT 100
-	`;
 }
